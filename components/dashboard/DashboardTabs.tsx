@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from "react"
 import type { User } from "@supabase/supabase-js"
+import { createClient } from "@/lib/supabase/client" // <-- IMPORTANT: Use the client-side Supabase instance
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Crown } from "lucide-react"
-
-// Import all our advanced components
 import BackupManager from "@/components/dashboard/BackupManager"
 import HubSpotConnect from "@/components/hubspot/HubSpotConnect"
 import PageManager from "@/components/pages/PageManager"
@@ -17,17 +16,31 @@ import AuditLogs from "@/components/audit/AuditLogs"
 import TeamManager from "@/components/team/TeamManager"
 import PremiumUpgrade from "@/components/premium/PremiumUpgrade"
 
+// The props interface no longer includes the user object
 interface DashboardTabsProps {
-  user: User
   userSettings: any
   fieldConfigs: any[]
 }
 
-export default function DashboardTabs({ user, userSettings, fieldConfigs }: DashboardTabsProps) {
+export default function DashboardTabs({ userSettings, fieldConfigs }: DashboardTabsProps) {
+  // State to hold the user object fetched on the client
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+
   const [activeTab, setActiveTab] = useState("overview")
   const [currentUserSettings, setCurrentUserSettings] = useState(userSettings)
 
-  // Update local state when userSettings prop changes
+  // Fetch the user on component mount
+  useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createClient()
+      const { data } = await supabase.auth.getUser()
+      setUser(data.user)
+      setLoading(false)
+    }
+    fetchUser()
+  }, [])
+
   useEffect(() => {
     setCurrentUserSettings(userSettings)
   }, [userSettings])
@@ -38,12 +51,22 @@ export default function DashboardTabs({ user, userSettings, fieldConfigs }: Dash
   const isHubSpotConnected = !!hubspotToken
 
   const handleConnectionUpdate = (connected: boolean, token?: string, connectionType?: string) => {
-    // Update local state immediately for UI responsiveness
     setCurrentUserSettings((prev: any) => ({
       ...prev,
       hubspot_token_encrypted: connected ? token : null,
       hubspot_connection_type: connected ? connectionType : null,
     }))
+  }
+
+  // Show a loading state while fetching the user
+  if (loading) {
+    return <div className="p-10 text-center">Loading dashboard...</div>
+  }
+
+  // If for some reason the user is not found, show an error.
+  // This is a safeguard, as the parent server page should have redirected.
+  if (!user) {
+    return <div className="p-10 text-center text-red-500">Authentication error. Please sign in again.</div>
   }
 
   return (
@@ -69,10 +92,8 @@ export default function DashboardTabs({ user, userSettings, fieldConfigs }: Dash
           </TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Connection Status Cards */}
             <div className="bg-white p-6 rounded-lg border">
               <h3 className="font-semibold mb-2">HubSpot Connection</h3>
               <Badge variant={isHubSpotConnected ? "default" : "secondary"}>
@@ -87,7 +108,6 @@ export default function DashboardTabs({ user, userSettings, fieldConfigs }: Dash
                 </p>
               )}
             </div>
-
             <div className="bg-white p-6 rounded-lg border">
               <h3 className="font-semibold mb-2">Google Sheets</h3>
               <Badge variant={currentUserSettings?.google_refresh_token ? "default" : "secondary"}>
@@ -95,26 +115,16 @@ export default function DashboardTabs({ user, userSettings, fieldConfigs }: Dash
               </Badge>
               <p className="text-sm text-gray-600 mt-2">{sheetId ? `Sheet selected` : "No backup sheet selected"}</p>
             </div>
-
             <div className="bg-white p-6 rounded-lg border">
               <h3 className="font-semibold mb-2">Account Plan</h3>
               <Badge variant={isPremium ? "default" : "secondary"} className="flex items-center gap-1 w-fit">
-                {isPremium ? (
-                  <>
-                    <Crown className="h-3 w-3" />
-                    Premium
-                  </>
-                ) : (
-                  "Free Plan"
-                )}
+                {isPremium ? (<><Crown className="h-3 w-3" />Premium</>) : ("Free Plan")}
               </Badge>
               <p className="text-sm text-gray-600 mt-2">
                 {isPremium ? "All features unlocked" : "Upgrade for advanced features"}
               </p>
             </div>
           </div>
-
-          {/* Quick Actions */}
           <div className="bg-white p-6 rounded-lg border">
             <h3 className="font-semibold mb-4">Quick Start Guide</h3>
             <div className="space-y-3">
@@ -123,100 +133,57 @@ export default function DashboardTabs({ user, userSettings, fieldConfigs }: Dash
                   className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                     isHubSpotConnected ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
                   }`}
-                >
-                  1
-                </div>
-                <span className={isHubSpotConnected ? "text-green-700" : "text-gray-600"}>
-                  Connect your HubSpot account
-                </span>
+                >1</div>
+                <span className={isHubSpotConnected ? "text-green-700" : "text-gray-600"}>Connect your HubSpot account</span>
               </div>
               <div className="flex items-center gap-3">
                 <div
                   className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                    currentUserSettings?.google_refresh_token
-                      ? "bg-green-100 text-green-700"
-                      : "bg-gray-100 text-gray-500"
+                    currentUserSettings?.google_refresh_token ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
                   }`}
-                >
-                  2
-                </div>
-                <span className={currentUserSettings?.google_refresh_token ? "text-green-700" : "text-gray-600"}>
-                  Connect Google Sheets
-                </span>
+                >2</div>
+                <span className={currentUserSettings?.google_refresh_token ? "text-green-700" : "text-gray-600"}>Connect Google Sheets</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center text-xs font-bold">
-                  3
-                </div>
+                <div className="w-6 h-6 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center text-xs font-bold">3</div>
                 <span className="text-gray-600">Configure your field settings</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center text-xs font-bold">
-                  4
-                </div>
+                <div className="w-6 h-6 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center text-xs font-bold">4</div>
                 <span className="text-gray-600">Run your first backup</span>
               </div>
             </div>
           </div>
         </TabsContent>
-
-        {/* Connect Tab */}
+        
+        {/* Pass the client-fetched user object to all child components */}
         <TabsContent value="connect" className="space-y-6">
           <HubSpotConnect user={user} userSettings={currentUserSettings} onConnectionUpdate={handleConnectionUpdate} />
           <BackupManager user={user} hubspotToken={currentUserSettings?.hubspot_token_encrypted} />
         </TabsContent>
-
-        {/* Pages Tab */}
         <TabsContent value="pages">
-          <PageManager
-            user={user}
-            hubspotToken={currentUserSettings?.hubspot_token_encrypted}
-            userSettings={currentUserSettings}
-          />
+          <PageManager user={user} hubspotToken={currentUserSettings?.hubspot_token_encrypted} userSettings={currentUserSettings} />
         </TabsContent>
-
-        {/* Fields Tab */}
         <TabsContent value="fields">
           <FieldConfigurator user={user} fieldConfigs={fieldConfigs} isPremium={isPremium} />
         </TabsContent>
-
-        {/* Backup Tab */}
         <TabsContent value="backup">
           <BackupManager user={user} hubspotToken={currentUserSettings?.hubspot_token_encrypted} />
         </TabsContent>
-
-        {/* Rollback Tab (Premium) */}
         <TabsContent value="rollback">
-          <RollbackManager
-            user={user}
-            hubspotToken={currentUserSettings?.hubspot_token_encrypted}
-            userSettings={currentUserSettings}
-          />
+          <RollbackManager user={user} hubspotToken={currentUserSettings?.hubspot_token_encrypted} userSettings={currentUserSettings} />
         </TabsContent>
-
-        {/* Schedule Tab (Premium) */}
         <TabsContent value="schedule">
-          <AutoBackupScheduler
-            user={user}
-            hubspotToken={currentUserSettings?.hubspot_token_encrypted}
-            sheetId={sheetId}
-            userSettings={currentUserSettings}
-            onSettingsUpdate={() => {}}
-          />
+          <AutoBackupScheduler user={user} hubspotToken={currentUserSettings?.hubspot_token_encrypted} sheetId={sheetId} userSettings={currentUserSettings} onSettingsUpdate={() => {}} />
         </TabsContent>
-
-        {/* Logs Tab */}
         <TabsContent value="logs">
           <AuditLogs user={user} />
         </TabsContent>
-
-        {/* Team Tab */}
         <TabsContent value="team" className="hidden lg:block">
           <TeamManager user={user} isPremium={isPremium} />
         </TabsContent>
       </Tabs>
-
-      {/* Premium Upgrade Prompt */}
+      
       {!isPremium && (
         <div className="mt-8">
           <PremiumUpgrade user={user} />

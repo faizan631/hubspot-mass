@@ -1,5 +1,3 @@
-"use Client"
-
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import DashboardTabs from "@/components/dashboard/DashboardTabs"
@@ -20,7 +18,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     redirect("/")
   }
 
-  // Get user settings and field configurations
   const { data: userSettings } = await supabase.from("user_settings").select("*").eq("user_id", user.id).single()
 
   const { data: fieldConfigs } = await supabase
@@ -29,13 +26,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     .eq("user_id", user.id)
     .order("field_name")
 
-  // Handle OAuth callback messages
   const success = searchParams.success
   const error = searchParams.error
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
@@ -65,7 +60,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </div>
       </header>
 
-      {/* Status Messages */}
       {success === "google_connected" && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-2">
@@ -104,9 +98,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </div>
       )}
 
-      {/* Main Dashboard */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <DashboardTabs user={user} userSettings={userSettings} fieldConfigs={fieldConfigs || []} />
+        {/* We now ONLY pass the serializable data. The user object will be fetched on the client. */}
+        <DashboardTabs userSettings={userSettings} fieldConfigs={fieldConfigs || []} />
       </main>
     </div>
   )
