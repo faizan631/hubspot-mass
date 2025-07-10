@@ -18,14 +18,22 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     redirect("/")
   }
 
-  // We only need the user's email for the header, which is safe to use.
-  // We fetch userSettings on the client now, so we can't display the premium badge here.
-  // We'll move that logic to the client.
+  // Get user settings and field configurations
+  const { data: userSettings } = await supabase.from("user_settings").select("*").eq("user_id", user.id).single()
+
+  const { data: fieldConfigs } = await supabase
+    .from("field_configurations")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("field_name")
+
+  // Handle OAuth callback messages
   const success = searchParams.success
   const error = searchParams.error
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header */}
       <header className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
@@ -39,13 +47,23 @@ export default async function DashboardPage({ searchParams }: PageProps) {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              {/* The premium badge will now be handled inside DashboardTabs */}
+              <Badge variant={userSettings?.is_premium ? "default" : "secondary"} className="flex items-center gap-1">
+                {userSettings?.is_premium ? (
+                  <>
+                    <Crown className="h-3 w-3" />
+                    Premium
+                  </>
+                ) : (
+                  "Free Plan"
+                )}
+              </Badge>
               <div className="text-sm text-gray-600">Welcome, {user.email}</div>
             </div>
           </div>
         </div>
       </header>
 
+      {/* Status Messages */}
       {success === "google_connected" && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-2">
@@ -61,15 +79,32 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             <AlertCircle className="h-5 w-5 text-red-600" />
             <span className="text-red-800">
               {error === "oauth_failed" && "Google OAuth failed. Please try connecting again."}
-              {/* Other error messages */}
+              {error === "missing_params" && "OAuth callback missing required parameters."}
+              {error === "token_exchange_failed" && "Failed to exchange OAuth tokens."}
+              {error === "db_error" &&
+                "Database error occurred during connection. This might be a duplicate record issue."}
+              {error === "db_update_error" && "Failed to update your Google connection settings."}
+              {error === "db_insert_error" && "Failed to save your Google connection settings."}
+              {error === "callback_error" && "An error occurred during the OAuth callback."}
+              {error === "oauth_not_configured" && "Google OAuth is not properly configured."}
+              {![
+                "oauth_failed",
+                "missing_params",
+                "token_exchange_failed",
+                "db_error",
+                "db_update_error",
+                "db_insert_error",
+                "callback_error",
+                "oauth_not_configured",
+              ].includes(error as string) && "An unknown error occurred."}
             </span>
           </div>
         </div>
       )}
 
+      {/* Main Dashboard */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Render the component with NO props. It will fetch its own data. */}
-        <DashboardTabs />
+        <DashboardTabs user={user} userSettings={userSettings} fieldConfigs={fieldConfigs || []} />
       </main>
     </div>
   )

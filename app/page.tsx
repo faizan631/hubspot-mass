@@ -32,10 +32,12 @@ export default async function HomePage({ searchParams }: PageProps) {
     redirect("/dashboard")
   }
 
+  // Handle auth errors from callback
   const error = searchParams.error
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
@@ -59,6 +61,7 @@ export default async function HomePage({ searchParams }: PageProps) {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Auth Error Message */}
         {error && (
           <div className="mb-8">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-2">
@@ -72,6 +75,7 @@ export default async function HomePage({ searchParams }: PageProps) {
           </div>
         )}
 
+        {/* Hero Section */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
             <Zap className="w-4 h-4" />
@@ -106,6 +110,7 @@ export default async function HomePage({ searchParams }: PageProps) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          {/* Features Section */}
           <div className="space-y-8">
             <div>
               <h2 className="text-3xl font-bold text-gray-900 mb-6">Why Choose Smuves?</h2>
@@ -168,6 +173,7 @@ export default async function HomePage({ searchParams }: PageProps) {
               </div>
             </div>
 
+            {/* Social Proof */}
             <div className="bg-gray-50 rounded-xl p-6">
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex -space-x-2">
@@ -197,8 +203,11 @@ export default async function HomePage({ searchParams }: PageProps) {
             </div>
           </div>
 
+          {/* Auth Form */}
           <div className="lg:sticky lg:top-24">
             <AuthForm />
+
+            {/* Quick Stats */}
             <div className="mt-6 grid grid-cols-3 gap-4 text-center">
               <div className="p-3 bg-blue-50 rounded-lg">
                 <div className="text-2xl font-bold text-blue-600">2min</div>
@@ -216,6 +225,7 @@ export default async function HomePage({ searchParams }: PageProps) {
           </div>
         </div>
 
+        {/* Pricing Section */}
         <div className="mt-20">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Simple, Transparent Pricing</h2>
@@ -223,6 +233,7 @@ export default async function HomePage({ searchParams }: PageProps) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Free Plan */}
             <Card className="border-2 border-gray-200">
               <CardHeader>
                 <CardTitle className="text-2xl">Free</CardTitle>
@@ -260,6 +271,7 @@ export default async function HomePage({ searchParams }: PageProps) {
               </CardContent>
             </Card>
 
+            {/* Premium Plan */}
             <Card className="border-2 border-blue-500 relative">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                 <Badge className="bg-blue-500 text-white">Most Popular</Badge>
@@ -307,6 +319,7 @@ export default async function HomePage({ searchParams }: PageProps) {
           </div>
         </div>
 
+        {/* CTA Section */}
         <div className="mt-20 text-center bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-12 text-white">
           <h2 className="text-3xl font-bold mb-4">Ready to Protect Your HubSpot Content?</h2>
           <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
@@ -328,6 +341,7 @@ export default async function HomePage({ searchParams }: PageProps) {
         </div>
       </main>
 
+      {/* Footer */}
       <footer className="border-t bg-gray-50 mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -344,36 +358,84 @@ export default async function HomePage({ searchParams }: PageProps) {
             <div>
               <h3 className="font-semibold text-gray-900 mb-3">Product</h3>
               <ul className="space-y-2 text-sm text-gray-600">
-                <li><a href="#" className="hover:text-gray-900">Features</a></li>
-                <li><a href="#" className="hover:text-gray-900">Pricing</a></li>
-                <li><a href="#" className="hover:text-gray-900">Security</a></li>
-                <li><a href="#" className="hover:text-gray-900">Integrations</a></li>
+                <li>
+                  <a href="#" className="hover:text-gray-900">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900">
+                    Pricing
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900">
+                    Security
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900">
+                    Integrations
+                  </a>
+                </li>
               </ul>
             </div>
 
             <div>
               <h3 className="font-semibold text-gray-900 mb-3">Support</h3>
               <ul className="space-y-2 text-sm text-gray-600">
-                <li><a href="#" className="hover:text-gray-900">Documentation</a></li>
-                <li><a href="#" className="hover:text-gray-900">Help Center</a></li>
-                <li><a href="#" className="hover:text-gray-900">Contact Us</a></li>
-                <li><a href="#" className="hover:text-gray-900">Status</a></li>
+                <li>
+                  <a href="#" className="hover:text-gray-900">
+                    Documentation
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900">
+                    Help Center
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900">
+                    Contact Us
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900">
+                    Status
+                  </a>
+                </li>
               </ul>
             </div>
 
             <div>
               <h3 className="font-semibold text-gray-900 mb-3">Company</h3>
               <ul className="space-y-2 text-sm text-gray-600">
-                <li><a href="#" className="hover:text-gray-900">About</a></li>
-                <li><a href="#" className="hover:text-gray-900">Blog</a></li>
-                <li><a href="#" className="hover:text-gray-900">Privacy</a></li>
-                <li><a href="#" className="hover:text-gray-900">Terms</a></li>
+                <li>
+                  <a href="#" className="hover:text-gray-900">
+                    About
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900">
+                    Blog
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900">
+                    Privacy
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900">
+                    Terms
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
 
           <div className="border-t border-gray-200 mt-8 pt-8 text-center text-sm text-gray-600">
-            <p>© 2025 Smuves. All rights reserved. Built with ❤️ for HubSpot users.</p>
+            <p>&copy; 2025 Smuves. All rights reserved. Built with ❤️ for HubSpot users.</p>
           </div>
         </div>
       </footer>
