@@ -1,41 +1,52 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
-import { google } from "googleapis"
+import { type NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { google } from "googleapis";
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, userId } = await request.json()
+    const { name, userId } = await request.json();
 
     if (!name || !userId) {
-      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 })
+      return NextResponse.json(
+        { success: false, error: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
-    const supabase = createClient()
+    const supabase = createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (authError || !user || user.id !== userId) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
     // Get user's Google tokens
     const { data: userSettings, error: settingsError } = await supabase
       .from("user_settings")
-      .select("google_access_token, google_refresh_token, google_token_expires_at")
+      .select(
+        "google_access_token, google_refresh_token, google_token_expires_at"
+      )
       .eq("user_id", user.id)
-      .single()
+      .single();
 
     if (settingsError || !userSettings?.google_access_token) {
-      return NextResponse.json({ success: false, error: "Google Sheets not connected" }, { status: 400 })
+      return NextResponse.json(
+        { success: false, error: "Google Sheets not connected" },
+        { status: 400 }
+      );
     }
 
     // Set up Google Sheets API
-    const auth = new google.auth.OAuth2()
-    auth.setCredentials({ access_token: userSettings.google_access_token })
+    const auth = new google.auth.OAuth2();
+    auth.setCredentials({ access_token: userSettings.google_access_token });
 
-    const sheets = google.sheets({ version: "v4", auth })
+    const sheets = google.sheets({ version: "v4", auth });
 
     // Create new spreadsheet
     const createResponse = await sheets.spreadsheets.create({
@@ -55,10 +66,18 @@ export async function POST(request: NextRequest) {
           },
         ],
       },
-    })
+    });
 
-    const spreadsheetId = createResponse.data.spreadsheetId!
-    const spreadsheetUrl = createResponse.data.spreadsheetUrl!
+    const spreadsheetId = createResponse.data.spreadsheetId!;
+    const spreadsheetUrl = createResponse.data.spreadsheetUrl!;
+
+    // ✅ Get the actual sheetId from the response
+    const sheetId = createResponse.data.sheets?.[0].properties?.sheetId;
+    if (!sheetId) {
+      throw new Error(
+        "Failed to retrieve sheetId from the spreadsheet response"
+      );
+    }
 
     // Add headers to the sheet
     const headers = [
@@ -82,7 +101,7 @@ export async function POST(request: NextRequest) {
       "Archive Status",
       "Page Type",
       "Template Path",
-    ]
+    ];
 
     await sheets.spreadsheets.values.update({
       spreadsheetId,
@@ -91,7 +110,7 @@ export async function POST(request: NextRequest) {
       requestBody: {
         values: [headers],
       },
-    })
+    });
 
     // Format the header row
     await sheets.spreadsheets.batchUpdate({
@@ -101,7 +120,7 @@ export async function POST(request: NextRequest) {
           {
             repeatCell: {
               range: {
-                sheetId: 0,
+                sheetId, // ✅ Use dynamic sheet ID here
                 startRowIndex: 0,
                 endRowIndex: 1,
                 startColumnIndex: 0,
@@ -122,7 +141,7 @@ export async function POST(request: NextRequest) {
           {
             autoResizeDimensions: {
               dimensions: {
-                sheetId: 0,
+                sheetId, // ✅ Use dynamic sheet ID here
                 dimension: "COLUMNS",
                 startIndex: 0,
                 endIndex: headers.length,
@@ -131,7 +150,7 @@ export async function POST(request: NextRequest) {
           },
         ],
       },
-    })
+    });
 
     // Log the creation
     await supabase.from("audit_logs").insert({
@@ -144,7 +163,7 @@ export async function POST(request: NextRequest) {
         sheet_url: spreadsheetUrl,
         headers_count: headers.length,
       },
-    })
+    });
 
     return NextResponse.json({
       success: true,
@@ -154,9 +173,15 @@ export async function POST(request: NextRequest) {
         url: spreadsheetUrl,
         createdTime: new Date().toISOString(),
       },
-    })
+    });
   } catch (error) {
-    console.error("Create Google Sheet error:", error)
-    return NextResponse.json({ success: false, error: "Failed to create Google Sheet" }, { status: 500 })
+    console.error("Create Google Sheet error:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    );
   }
 }
