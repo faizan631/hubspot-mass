@@ -115,7 +115,7 @@ export default function AuthCallbackPage() {
 
         // Redirect to home page with error after a delay
         setTimeout(() => {
-          router.replace(`/?error=${encodeURIComponent(errorMessage)}`)
+          router.replace(`/auth/?error=${encodeURIComponent(errorMessage)}`)
         }, 3000)
       } finally {
         setLoading(false)
@@ -143,43 +143,14 @@ export default function AuthCallbackPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="max-w-md w-full bg-white p-6 rounded-lg shadow-md">
-          <div className="text-center">
-            <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-              <AlertCircle className="h-6 w-6 text-red-600" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Authentication Error</h3>
-            <p className="text-sm text-gray-600 mb-4">{error}</p>
-
-            {/* Helpful tips based on error type */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-left">
-              <h4 className="font-medium text-blue-900 text-sm mb-2">💡 Quick fixes:</h4>
-              <ul className="text-xs text-blue-800 space-y-1">
-                {error.includes("Database") || error.includes("connection") ? (
-                  <>
-                    <li>• Check your Supabase environment variables</li>
-                    <li>• Verify your Supabase project is active</li>
-                    <li>• Check Supabase dashboard for issues</li>
-                  </>
-                ) : error.includes("expired") || error.includes("code_verifier") ? (
-                  <>
-                    <li>• Request a fresh magic link</li>
-                    <li>• Don't reuse old email links</li>
-                    <li>• Check if you have multiple tabs open</li>
-                  </>
-                ) : (
-                  <>
-                    <li>• Try requesting a new magic link</li>
-                    <li>• Check your internet connection</li>
-                    <li>• Clear your browser cache</li>
-                  </>
-                )}
-              </ul>
-            </div>
-
-            <p className="text-xs text-gray-500">Redirecting you back to the login page...</p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="max-w-md w-full bg-white p-6 rounded-lg shadow-md text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Authentication Successful!</h3>
+          <p className="text-sm text-gray-600 mb-4">Welcome to Smuves! Redirecting you to your dashboard...</p>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 mx-auto"></div>
         </div>
       </div>
     )
