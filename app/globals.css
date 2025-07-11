@@ -17,6 +17,21 @@
   scrollbar-width: none;
 }
 
+
+/* In app/globals.css */
+
+.diff-container del {
+  background-color: #fde8e8; /* Light red background */
+  color: #c53030; /* Darker red text */
+  text-decoration: none; /* Remove the default strikethrough */
+}
+
+.diff-container ins {
+  background-color: #e6fffa; /* Light green background */
+  color: #2f855a; /* Darker green text */
+  text-decoration: none; /* Remove the default underline */
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

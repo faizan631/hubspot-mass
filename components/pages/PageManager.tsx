@@ -135,6 +135,15 @@ export default function PageManager({ user, userSettings }: PageManagerProps) {
     });
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const paginatedPages = filteredPages.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  const totalPages = Math.ceil(filteredPages.length / itemsPerPage);
+
   if (loading) {
     return (
       <Card>
@@ -215,100 +224,96 @@ export default function PageManager({ user, userSettings }: PageManagerProps) {
 
       {/* Pages List */}
       {filteredPages.length > 0 ? (
-        <div className="grid gap-4">
-          {filteredPages.map((page) => (
-            <Card key={page.id}>
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-medium">{page.name}</h3>
-                      {page.state && (
-                        <Badge
-                          variant={
-                            page.state === "PUBLISHED" ? "default" : "secondary"
-                          }
-                        >
-                          {page.state}
-                        </Badge>
-                      )}
-                    </div>
-
-                    {page.htmlTitle && (
-                      <p className="text-sm text-gray-600">{page.htmlTitle}</p>
-                    )}
-
-                    {page.metaDescription && (
-                      <p className="text-xs text-gray-500 line-clamp-2">
-                        {page.metaDescription}
-                      </p>
-                    )}
-
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                      {page.slug && <span>Slug: {page.slug}</span>}
-                      {page.updatedAt && (
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>
-                            Updated:{" "}
-                            {new Date(page.updatedAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {page.url && (
-                    <Button variant="ghost" size="sm" asChild>
-                      <a
-                        href={page.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+        <div className="space-y-4">
+          <div className="overflow-auto border rounded-lg">
+            <table className="min-w-full text-sm text-left">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-4 py-2 font-medium text-gray-700">Name</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">Slug</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">
+                    Updated
+                  </th>
+                  <th className="px-4 py-2 font-medium text-gray-700">State</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {paginatedPages.map((page) => (
+                  <tr key={page.id}>
+                    <td className="px-4 py-2">{page.name}</td>
+                    <td className="px-4 py-2">{page.slug}</td>
+                    <td className="px-4 py-2">
+                      {new Date(page.updatedAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-2">
+                      <Badge
+                        variant={
+                          page.state === "PUBLISHED" ? "default" : "secondary"
+                        }
                       >
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                        {page.state}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-2">
+                      <Button variant="link" size="sm" asChild>
+                        <a
+                          href={page.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="flex justify-end items-center gap-2 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-gray-600">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       ) : (
         <Card>
           <CardContent className="pt-6">
             <div className="text-center py-8">
-              {pages.length === 0 ? (
-                <>
-                  <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    No Pages Found
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    {isPaidConnection
-                      ? "No pages found in your HubSpot CMS"
-                      : "No data returned from free-tier endpoints"}
-                  </p>
-                  <Button onClick={refreshPages} disabled={refreshing}>
-                    <RefreshCw
-                      className={`h-4 w-4 mr-2 ${
-                        refreshing ? "animate-spin" : ""
-                      }`}
-                    />
-                    Try Again
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    No Matching Pages
-                  </h3>
-                  <p className="text-gray-600">
-                    Try adjusting your search terms
-                  </p>
-                </>
-              )}
+              <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No Pages Found
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Try adjusting your token or filter.
+              </p>
+              <Button onClick={refreshPages} disabled={refreshing}>
+                <RefreshCw
+                  className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+                />
+                Try Again
+              </Button>
             </div>
           </CardContent>
         </Card>

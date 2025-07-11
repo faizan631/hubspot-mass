@@ -1,204 +1,328 @@
-import { createClient } from "@/lib/supabase/server"
-import { type NextRequest, NextResponse } from "next/server"
-import { google } from "googleapis"
+// FILE: /api/backup/sync-to-sheets/route.ts
 
+import { createClient } from "@/lib/supabase/server";
+import { type NextRequest, NextResponse } from "next/server";
+import { google } from "googleapis";
+
+// --- HELPER FUNCTIONS (These are correct, no changes needed) ---
+async function fetchAllPaginatedHubspotItems(
+  initialUrl: string,
+  token: string,
+  pageType: string
+): Promise<any[]> {
+  const allResults: any[] = [];
+  let url: string | undefined = initialUrl;
+  while (url) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) break;
+      const data = await response.json();
+      allResults.push(
+        ...(data.results || []).map((item: any) => ({ ...item, pageType }))
+      );
+      url = data.paging?.next?.link;
+    } catch (error) {
+      console.error(`Pagination error at ${url}:`, error);
+      break;
+    }
+  }
+  return allResults;
+}
+
+async function fetchItemDetails(item: any, token: string): Promise<any> {
+  let detailUrl = "";
+  switch (item.pageType) {
+    case "Site Page":
+      detailUrl = `https://api.hubapi.com/cms/v3/pages/site-pages/${item.id}`;
+      break;
+    case "Landing Page":
+      detailUrl = `https://api.hubapi.com/cms/v3/pages/landing-pages/${item.id}`;
+      break;
+    case "Blog Post":
+      detailUrl = `https://api.hubapi.com/cms/v3/blogs/posts/${item.id}`;
+      break;
+    default:
+      return item;
+  }
+  try {
+    const response = await fetch(detailUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok)
+      return { ...item, body: "Error: Could not fetch details." };
+    const details = await response.json();
+    return { ...details, pageType: item.pageType };
+  } catch (err) {
+    return { ...item, body: "Error: Failed to fetch content." };
+  }
+}
+
+async function fetchScrapedWebsitePages(
+  domain: string,
+  token: string
+): Promise<any[]> {
+  if (!process.env.NEXT_PUBLIC_APP_URL) return [];
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL}/api/hubspot/website-scraper`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain, hubspotToken: token }),
+      }
+    );
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.success ? data.pages : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+// --- MAIN ROUTE ---
 export async function POST(request: NextRequest) {
   try {
-    const { userId, hubspotToken, sheetId } = await request.json()
-
-    if (!userId || !hubspotToken || !sheetId) {
-      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 })
+    const { userId, hubspotToken, sheetId, sheetName } = await request.json();
+    if (!userId || !hubspotToken || !sheetId || !sheetName) {
+      return NextResponse.json(
+        { success: false, error: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
-    const supabase = createClient()
+    const supabase = createClient();
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser()
-
+    } = await supabase.auth.getUser();
     if (authError || !user || user.id !== userId) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
-    // Get user's Google tokens
     const { data: userSettings, error: settingsError } = await supabase
       .from("user_settings")
-      .select("google_access_token, hubspot_connection_type, website_domain")
+      .select("google_access_token, website_domain")
       .eq("user_id", user.id)
-      .single()
-
+      .single();
     if (settingsError || !userSettings?.google_access_token) {
-      return NextResponse.json({ success: false, error: "Google Sheets not connected" }, { status: 400 })
+      return NextResponse.json(
+        { success: false, error: "Google Sheets not connected" },
+        { status: 400 }
+      );
     }
 
-    // Set up Google Sheets API
-    const auth = new google.auth.OAuth2()
-    auth.setCredentials({ access_token: userSettings.google_access_token })
-    const sheets = google.sheets({ version: "v4", auth })
-
-    // Fetch HubSpot pages based on connection type
-    let hubspotPages = []
-    const connectionType = userSettings.hubspot_connection_type
-
-    if (connectionType === "paid") {
-      // Use HubSpot CMS API for paid accounts
-      const hubspotResponse = await fetch("https://api.hubapi.com/cms/v3/pages/site-pages", {
-        headers: {
-          Authorization: `Bearer ${hubspotToken}`,
-          "Content-Type": "application/json",
-        },
-      })
-
-      if (!hubspotResponse.ok) {
-        throw new Error(`HubSpot API error: ${hubspotResponse.statusText}`)
-      }
-
-      const hubspotData = await hubspotResponse.json()
-      hubspotPages = hubspotData.results || []
-    } else {
-      // Use free tier approach - fetch from multiple endpoints
-      const endpoints = [
-        "https://api.hubapi.com/cms/v3/blogs/posts",
-        "https://api.hubapi.com/crm/v3/objects/contacts",
-        "https://api.hubapi.com/crm/v3/objects/companies",
-      ]
-
-      for (const endpoint of endpoints) {
-        try {
-          const response = await fetch(endpoint, {
-            headers: {
-              Authorization: `Bearer ${hubspotToken}`,
-              "Content-Type": "application/json",
-            },
-          })
-
-          if (response.ok) {
-            const data = await response.json()
-            if (data.results) {
-              hubspotPages.push(...data.results)
-            }
-          }
-        } catch (error) {
-          console.error(`Error fetching from ${endpoint}:`, error)
-        }
-      }
-
-      // Add website scraping data if domain is available
-      if (userSettings.website_domain) {
-        try {
-          const scrapingResponse = await fetch("/api/hubspot/website-scraper", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              domain: userSettings.website_domain,
-              hubspotToken,
-            }),
-          })
-
-          if (scrapingResponse.ok) {
-            const scrapingData = await scrapingResponse.json()
-            if (scrapingData.success && scrapingData.pages) {
-              hubspotPages.push(...scrapingData.pages)
-            }
-          }
-        } catch (error) {
-          console.error("Website scraping error:", error)
-        }
-      }
+    // 1. Fetch ALL content from HubSpot
+    console.log("Step 1: Fetching all HubSpot content...");
+    const endpoints = {
+      "Site Page": "https://api.hubapi.com/cms/v3/pages/site-pages",
+      "Landing Page": "https://api.hubapi.com/cms/v3/pages/landing-pages",
+      "Blog Post": "https://api.hubapi.com/cms/v3/blogs/posts",
+    };
+    let contentList: any[] = [];
+    for (const [pageType, url] of Object.entries(endpoints)) {
+      contentList.push(
+        ...(await fetchAllPaginatedHubspotItems(url, hubspotToken, pageType))
+      );
     }
+    const detailedPages = await Promise.all(
+      contentList.map((item) => fetchItemDetails(item, hubspotToken))
+    );
 
-    if (hubspotPages.length === 0) {
-      return NextResponse.json({ success: false, error: "No pages found to backup" }, { status: 400 })
+    // 2. Fetch Scraped pages
+    let scrapedPages: any[] = [];
+    if (userSettings.website_domain) {
+      scrapedPages = await fetchScrapedWebsitePages(
+        userSettings.website_domain,
+        hubspotToken
+      );
     }
+    const normalizedScrapedPages = scrapedPages.map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      url: p.url,
+      htmlTitle: p.content?.title,
+      metaDescription: p.content?.metaDescription,
+      slug: p.slug,
+      currentState: p.status,
+      createdAt: "",
+      updatedAt: p.updatedAt,
+      pageType: "Website Page",
+      body: p.content?.bodyText || "",
+    }));
 
-    // Prepare data for Google Sheets
-    const backupDate = new Date().toISOString()
-    const sheetData = hubspotPages.map((page: any) => [
+    const allPages = [...detailedPages, ...normalizedScrapedPages];
+    if (allPages.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "No content found in HubSpot to backup." },
+        { status: 404 }
+      );
+    }
+    console.log(
+      `Step 2: Found a total of ${allPages.length} pages to back up.`
+    );
+
+    // 3. Prepare data for the sheet
+    const backupDate = new Date().toISOString();
+    // *** NEW: Create a unique ID for this entire backup operation ***
+    const backupId = `backup_${Date.now()}`;
+
+    const headers = [
+      [
+        "Backup Date",
+        "ID",
+        "Name",
+        "URL",
+        "HTML Title",
+        "Meta Description",
+        "Slug",
+        "State",
+        "Created/Published At",
+        "Updated At",
+        "Content Type",
+        "Body Content",
+      ],
+    ];
+    const sheetRows = allPages.map((page: any) => [
       backupDate,
       page.id || "",
-      page.name || page.title || "",
-      page.url || page.publicUrl || "",
-      page.htmlTitle || page.title || "",
+      page.name || "Untitled",
+      page.url || "",
+      page.htmlTitle || page.name || "",
       page.metaDescription || "",
       page.slug || "",
-      page.state || page.status || "",
-      page.createdAt || page.created || "",
-      page.updatedAt || page.updated || "",
-      page.createdBy || "",
-      page.updatedBy || "",
-      page.language || "en",
-      page.campaign || "",
-      page.contentGroupId || "",
-      page.domain || userSettings.website_domain || "",
-      page.subdomain || "",
-      page.archivedAt ? "Archived" : "Active",
-      connectionType === "paid" ? "CMS Page" : "Free Tier Data",
-      page.templatePath || "",
-    ])
+      page.currentState || page.state || "UNKNOWN",
+      page.publishDate || page.createdAt || "",
+      page.updatedAt || "",
+      page.pageType || "Unknown",
+      page.body || "",
+    ]);
 
-    // Find the next empty row
-    const existingData = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: "HubSpot Pages!A:A",
-    })
+    // 4. Save to Google Sheets (This section is unchanged)
+    const auth = new google.auth.OAuth2();
+    auth.setCredentials({ access_token: userSettings.google_access_token });
+    const sheets = google.sheets({ version: "v4", auth });
+    const quotedSheetName = `'${sheetName}'`;
 
-    const nextRow = (existingData.data.values?.length || 0) + 1
+    try {
+      await sheets.spreadsheets.values.get({
+        spreadsheetId: sheetId,
+        range: `${quotedSheetName}!A1`,
+      });
+    } catch (err: any) {
+      if (
+        err.message.includes("Unable to parse range") ||
+        err.message.includes("not found")
+      ) {
+        console.log(
+          `Sheet '${sheetName}' not found. Creating it with headers.`
+        );
+        try {
+          await sheets.spreadsheets.batchUpdate({
+            spreadsheetId: sheetId,
+            requestBody: {
+              requests: [{ addSheet: { properties: { title: sheetName } } }],
+            },
+          });
+        } catch (addSheetErr: any) {
+          if (!addSheetErr.message.includes("already exists"))
+            throw addSheetErr;
+        }
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: sheetId,
+          range: `${quotedSheetName}!A1`,
+          valueInputOption: "RAW",
+          requestBody: { values: headers },
+        });
+      } else {
+        throw err;
+      }
+    }
 
-    // Append data to Google Sheets
+    console.log(
+      `Step 3: Appending ${sheetRows.length} rows to sheet: ${quotedSheetName}`
+    );
     await sheets.spreadsheets.values.append({
       spreadsheetId: sheetId,
-      range: `HubSpot Pages!A${nextRow}`,
-      valueInputOption: "RAW",
+      range: quotedSheetName,
+      valueInputOption: "USER_ENTERED",
       insertDataOption: "INSERT_ROWS",
-      requestBody: {
-        values: sheetData,
-      },
-    })
+      requestBody: { values: sheetRows },
+    });
+    console.log("Google Sheets Append successful.");
 
-    // Log the backup session
+    // 5. *** NEW: Save the backup snapshot to your Supabase database ***
+    console.log(
+      `Step 4: Saving ${allPages.length} pages to Supabase under backup_id: ${backupId}`
+    );
+
+    const backupDataForSupabase = allPages.map((page) => ({
+      user_id: user.id,
+      backup_id: backupId,
+      hubspot_page_id: String(page.id || "N/A"), // Ensure ID is a string and handle missing IDs
+      page_type: page.pageType || "Unknown",
+      name: page.name || "Untitled",
+      url: page.url || "",
+      html_title: page.htmlTitle || page.name || "",
+      meta_description: page.metaDescription || "",
+      slug: page.slug || "",
+      body_content: page.body || "",
+      // created_at is handled by the database default
+    }));
+
+    const { error: insertError } = await supabase
+      .from("hubspot_page_backups")
+      .insert(backupDataForSupabase);
+
+    if (insertError) {
+      console.error(
+        "CRITICAL: Failed to save backup to Supabase:",
+        insertError
+      );
+      // Decide how to handle this. You could fail the whole request or just log the error.
+      // For now, we'll throw an error to make it clear the backup is incomplete.
+      throw new Error(
+        `Failed to save backup snapshot to database: ${insertError.message}`
+      );
+    }
+
+    console.log("Successfully saved backup snapshot to Supabase.");
+
+    // 6. Log success to audit table and return
     await supabase.from("audit_logs").insert({
       user_id: user.id,
-      action_type: "backup",
-      resource_type: "google_sheet",
+      action_type: "backup_and_snapshot", // More descriptive action
+      resource_type: "google_sheet_and_db",
       resource_id: sheetId,
       details: {
-        pages_synced: hubspotPages.length,
-        connection_type: connectionType,
+        pages_synced: allPages.length,
         backup_date: backupDate,
-        sheet_id: sheetId,
+        sheet_name: sheetName,
+        db_backup_id: backupId, // Store the backup ID for reference
       },
-    })
+    });
 
     return NextResponse.json({
       success: true,
-      pages_synced: hubspotPages.length,
-      total_pages: hubspotPages.length,
-      backup_date: backupDate,
+      pages_synced: allPages.length,
       sheet_url: `https://docs.google.com/spreadsheets/d/${sheetId}`,
-    })
+    });
   } catch (error) {
-    console.error("Sync to sheets error:", error)
-
-    // Log the failed backup
-    try {
-      const supabase = createClient()
-      await supabase.from("audit_logs").insert({
-        user_id: userId,
-        action_type: "backup",
-        resource_type: "google_sheet",
-        resource_id: sheetId,
-        details: {
-          error: error instanceof Error ? error.message : "Unknown error",
-          failed_at: new Date().toISOString(),
-        },
-      })
-    } catch (logError) {
-      console.error("Failed to log backup error:", logError)
-    }
-
+    console.error("Backup failed:", error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Backup failed" },
-      { status: 500 },
-    )
+      {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Backup process failed.",
+      },
+      { status: 500 }
+    );
   }
 }
