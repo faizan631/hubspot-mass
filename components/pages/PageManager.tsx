@@ -76,14 +76,10 @@ export default function PageManager({ user, userSettings }: PageManagerProps) {
         ? "/api/hubspot/pages"
         : "/api/hubspot/free-tier-pages";
 
-      const response = await fetch(endpoint, {
+      const response = await fetch("/api/hubspot/pages", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           hubspotToken: userSettings.hubspot_token_encrypted,
-          websiteDomain: userSettings.website_domain,
         }),
       });
 

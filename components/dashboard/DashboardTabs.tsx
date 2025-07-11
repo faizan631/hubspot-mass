@@ -1,72 +1,95 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import type { User } from "@supabase/supabase-js"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { Crown } from "lucide-react"
+import { useState, useEffect } from "react";
+import type { User } from "@supabase/supabase-js";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Crown } from "lucide-react";
 
 // Import all our advanced components
-import BackupManager from "@/components/dashboard/BackupManager"
-import HubSpotConnect from "@/components/hubspot/HubSpotConnect"
-import PageManager from "@/components/pages/PageManager"
-import FieldConfigurator from "@/components/fields/FieldConfigurator"
-import RollbackManager from "@/components/enhanced/RollbackManager"
-import AutoBackupScheduler from "@/components/enhanced/AutoBackupScheduler"
-import AuditLogs from "@/components/audit/AuditLogs"
-import TeamManager from "@/components/team/TeamManager"
-import PremiumUpgrade from "@/components/premium/PremiumUpgrade"
+import BackupManager from "@/components/dashboard/BackupManager";
+import HubSpotConnect from "@/components/hubspot/HubSpotConnect";
+import PageManager from "@/components/pages/PageManager";
+import FieldConfigurator from "@/components/fields/FieldConfigurator";
+import RollbackManager from "@/components/enhanced/RollbackManager";
+// import AutoBackupScheduler from "@/components/enhanced/AutoBackupScheduler"
+import AuditLogs from "@/components/audit/AuditLogs";
+// import TeamManager from "@/components/team/TeamManager"
+import PremiumUpgrade from "@/components/premium/PremiumUpgrade";
 
 interface DashboardTabsProps {
-  user: User
-  userSettings: any
-  fieldConfigs: any[]
+  user: User;
+  userSettings: any;
+  fieldConfigs: any[];
 }
 
-export default function DashboardTabs({ user, userSettings, fieldConfigs }: DashboardTabsProps) {
-  const [activeTab, setActiveTab] = useState("overview")
-  const [currentUserSettings, setCurrentUserSettings] = useState(userSettings)
+export default function DashboardTabs({
+  user,
+  userSettings,
+  fieldConfigs,
+}: DashboardTabsProps) {
+  const [activeTab, setActiveTab] = useState("overview");
+  const [currentUserSettings, setCurrentUserSettings] = useState(userSettings);
 
   // Update local state when userSettings prop changes
   useEffect(() => {
-    setCurrentUserSettings(userSettings)
-  }, [userSettings])
+    setCurrentUserSettings(userSettings);
+  }, [userSettings]);
 
-  const isPremium = currentUserSettings?.is_premium || false
-  const hubspotToken = currentUserSettings?.hubspot_token_encrypted
-  const sheetId = currentUserSettings?.backup_sheet_id
-  const isHubSpotConnected = !!hubspotToken
+  const isPremium = currentUserSettings?.is_premium || false;
+  const hubspotToken = currentUserSettings?.hubspot_token_encrypted;
+  const sheetId = currentUserSettings?.backup_sheet_id;
+  const isHubSpotConnected = !!hubspotToken;
 
-  const handleConnectionUpdate = (connected: boolean, token?: string, connectionType?: string) => {
+  const handleConnectionUpdate = (
+    connected: boolean,
+    token?: string,
+    connectionType?: string
+  ) => {
     // Update local state immediately for UI responsiveness
     setCurrentUserSettings((prev: any) => ({
       ...prev,
       hubspot_token_encrypted: connected ? token : null,
       hubspot_connection_type: connected ? connectionType : null,
-    }))
-  }
+    }));
+  };
 
   return (
     <div className="w-full">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-8 lg:grid-cols-9">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="connect">Connect</TabsTrigger>
-          <TabsTrigger value="pages">Pages</TabsTrigger>
-          <TabsTrigger value="fields">Fields</TabsTrigger>
-          <TabsTrigger value="backup">Backup</TabsTrigger>
-          <TabsTrigger value="rollback" className="relative">
+        <TabsList className="w-full overflow-x-auto flex lg:grid lg:grid-cols-7 gap-1 scrollbar-hide">
+          <TabsTrigger value="overview" className="flex-shrink-0 min-w-[100px]">
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="connect" className="flex-shrink-0 min-w-[100px]">
+            Connect
+          </TabsTrigger>
+          <TabsTrigger value="pages" className="flex-shrink-0 min-w-[100px]">
+            Pages
+          </TabsTrigger>
+          <TabsTrigger value="fields" className="flex-shrink-0 min-w-[100px]">
+            Fields
+          </TabsTrigger>
+          <TabsTrigger value="backup" className="flex-shrink-0 min-w-[100px]">
+            Backup
+          </TabsTrigger>
+          <TabsTrigger
+            value="rollback"
+            className="flex-shrink-0 min-w-[100px] relative"
+          >
             Rollback
             {isPremium && <Crown className="h-3 w-3 ml-1 text-yellow-500" />}
           </TabsTrigger>
-          <TabsTrigger value="schedule" className="relative">
+          {/* <TabsTrigger value="schedule" className="relative">
             Schedule
             {isPremium && <Crown className="h-3 w-3 ml-1 text-yellow-500" />}
+          </TabsTrigger> */}
+          <TabsTrigger value="logs" className="flex-shrink-0 min-w-[100px]">
+            Logs
           </TabsTrigger>
-          <TabsTrigger value="logs">Logs</TabsTrigger>
-          <TabsTrigger value="team" className="hidden lg:block">
+          {/* <TabsTrigger value="team" className="hidden lg:block">
             Team
-          </TabsTrigger>
+          </TabsTrigger> */}
         </TabsList>
 
         {/* Overview Tab */}
@@ -79,26 +102,44 @@ export default function DashboardTabs({ user, userSettings, fieldConfigs }: Dash
                 {isHubSpotConnected ? "Connected" : "Not Connected"}
               </Badge>
               <p className="text-sm text-gray-600 mt-2">
-                {isHubSpotConnected ? "Ready to sync pages" : "Connect to start backing up"}
+                {isHubSpotConnected
+                  ? "Ready to sync pages"
+                  : "Connect to start backing up"}
               </p>
               {currentUserSettings?.hubspot_connection_type && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Type: {currentUserSettings.hubspot_connection_type === "paid" ? "Full CMS" : "Free Tier"}
+                  Type:{" "}
+                  {currentUserSettings.hubspot_connection_type === "paid"
+                    ? "Full CMS"
+                    : "Free Tier"}
                 </p>
               )}
             </div>
 
             <div className="bg-white p-6 rounded-lg border">
               <h3 className="font-semibold mb-2">Google Sheets</h3>
-              <Badge variant={currentUserSettings?.google_refresh_token ? "default" : "secondary"}>
-                {currentUserSettings?.google_refresh_token ? "Connected" : "Not Connected"}
+              <Badge
+                variant={
+                  currentUserSettings?.google_refresh_token
+                    ? "default"
+                    : "secondary"
+                }
+              >
+                {currentUserSettings?.google_refresh_token
+                  ? "Connected"
+                  : "Not Connected"}
               </Badge>
-              <p className="text-sm text-gray-600 mt-2">{sheetId ? `Sheet selected` : "No backup sheet selected"}</p>
+              <p className="text-sm text-gray-600 mt-2">
+                {sheetId ? `Sheet selected` : "No backup sheet selected"}
+              </p>
             </div>
 
             <div className="bg-white p-6 rounded-lg border">
               <h3 className="font-semibold mb-2">Account Plan</h3>
-              <Badge variant={isPremium ? "default" : "secondary"} className="flex items-center gap-1 w-fit">
+              <Badge
+                variant={isPremium ? "default" : "secondary"}
+                className="flex items-center gap-1 w-fit"
+              >
                 {isPremium ? (
                   <>
                     <Crown className="h-3 w-3" />
@@ -109,7 +150,9 @@ export default function DashboardTabs({ user, userSettings, fieldConfigs }: Dash
                 )}
               </Badge>
               <p className="text-sm text-gray-600 mt-2">
-                {isPremium ? "All features unlocked" : "Upgrade for advanced features"}
+                {isPremium
+                  ? "All features unlocked"
+                  : "Upgrade for advanced features"}
               </p>
             </div>
           </div>
@@ -121,12 +164,18 @@ export default function DashboardTabs({ user, userSettings, fieldConfigs }: Dash
               <div className="flex items-center gap-3">
                 <div
                   className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                    isHubSpotConnected ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                    isHubSpotConnected
+                      ? "bg-green-100 text-green-700"
+                      : "bg-gray-100 text-gray-500"
                   }`}
                 >
                   1
                 </div>
-                <span className={isHubSpotConnected ? "text-green-700" : "text-gray-600"}>
+                <span
+                  className={
+                    isHubSpotConnected ? "text-green-700" : "text-gray-600"
+                  }
+                >
                   Connect your HubSpot account
                 </span>
               </div>
@@ -140,7 +189,13 @@ export default function DashboardTabs({ user, userSettings, fieldConfigs }: Dash
                 >
                   2
                 </div>
-                <span className={currentUserSettings?.google_refresh_token ? "text-green-700" : "text-gray-600"}>
+                <span
+                  className={
+                    currentUserSettings?.google_refresh_token
+                      ? "text-green-700"
+                      : "text-gray-600"
+                  }
+                >
                   Connect Google Sheets
                 </span>
               </div>
@@ -148,7 +203,9 @@ export default function DashboardTabs({ user, userSettings, fieldConfigs }: Dash
                 <div className="w-6 h-6 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center text-xs font-bold">
                   3
                 </div>
-                <span className="text-gray-600">Configure your field settings</span>
+                <span className="text-gray-600">
+                  Configure your field settings
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-6 h-6 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center text-xs font-bold">
@@ -162,8 +219,15 @@ export default function DashboardTabs({ user, userSettings, fieldConfigs }: Dash
 
         {/* Connect Tab */}
         <TabsContent value="connect" className="space-y-6">
-          <HubSpotConnect user={user} userSettings={currentUserSettings} onConnectionUpdate={handleConnectionUpdate} />
-          <BackupManager user={user} hubspotToken={currentUserSettings?.hubspot_token_encrypted} />
+          <HubSpotConnect
+            user={user}
+            userSettings={currentUserSettings}
+            onConnectionUpdate={handleConnectionUpdate}
+          />
+          <BackupManager
+            user={user}
+            hubspotToken={currentUserSettings?.hubspot_token_encrypted}
+          />
         </TabsContent>
 
         {/* Pages Tab */}
@@ -177,12 +241,19 @@ export default function DashboardTabs({ user, userSettings, fieldConfigs }: Dash
 
         {/* Fields Tab */}
         <TabsContent value="fields">
-          <FieldConfigurator user={user} fieldConfigs={fieldConfigs} isPremium={isPremium} />
+          <FieldConfigurator
+            user={user}
+            fieldConfigs={fieldConfigs}
+            isPremium={isPremium}
+          />
         </TabsContent>
 
         {/* Backup Tab */}
         <TabsContent value="backup">
-          <BackupManager user={user} hubspotToken={currentUserSettings?.hubspot_token_encrypted} />
+          <BackupManager
+            user={user}
+            hubspotToken={currentUserSettings?.hubspot_token_encrypted}
+          />
         </TabsContent>
 
         {/* Rollback Tab (Premium) */}
@@ -195,7 +266,7 @@ export default function DashboardTabs({ user, userSettings, fieldConfigs }: Dash
         </TabsContent>
 
         {/* Schedule Tab (Premium) */}
-        <TabsContent value="schedule">
+        {/* <TabsContent value="schedule">
           <AutoBackupScheduler
             user={user}
             hubspotToken={currentUserSettings?.hubspot_token_encrypted}
@@ -203,7 +274,7 @@ export default function DashboardTabs({ user, userSettings, fieldConfigs }: Dash
             userSettings={currentUserSettings}
             onSettingsUpdate={() => {}}
           />
-        </TabsContent>
+        </TabsContent> */}
 
         {/* Logs Tab */}
         <TabsContent value="logs">
@@ -211,9 +282,9 @@ export default function DashboardTabs({ user, userSettings, fieldConfigs }: Dash
         </TabsContent>
 
         {/* Team Tab */}
-        <TabsContent value="team" className="hidden lg:block">
+        {/* <TabsContent value="team" className="hidden lg:block">
           <TeamManager user={user} isPremium={isPremium} />
-        </TabsContent>
+        </TabsContent> */}
       </Tabs>
 
       {/* Premium Upgrade Prompt */}
@@ -223,5 +294,5 @@ export default function DashboardTabs({ user, userSettings, fieldConfigs }: Dash
         </div>
       )}
     </div>
-  )
+  );
 }

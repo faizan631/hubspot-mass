@@ -1,40 +1,55 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/hooks/use-toast"
-import { Crown, Check, Zap, Users, Shield, Database, Calendar, Star } from "lucide-react"
-import type { User } from "@supabase/supabase-js"
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Crown,
+  Check,
+  Zap,
+  Users,
+  Shield,
+  Database,
+  Calendar,
+  Star,
+} from "lucide-react";
+import type { User } from "@supabase/supabase-js";
 
 interface PremiumUpgradeProps {
-  user: User
+  user: User;
 }
 
 export default function PremiumUpgrade({ user }: PremiumUpgradeProps) {
-  const [loading, setLoading] = useState(false)
-  const { toast } = useToast()
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleUpgrade = async (plan: string) => {
-    setLoading(true)
+    setLoading(true);
     try {
       // Simulate upgrade process
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       toast({
         title: "Upgrade Successful! 🎉",
         description: `Welcome to ${plan}! Your premium features are now active.`,
-      })
+      });
     } catch (error) {
       toast({
         title: "Upgrade Failed",
         description: "Please try again or contact support",
         variant: "destructive",
-      })
+      });
     }
-    setLoading(false)
-  }
+    setLoading(false);
+  };
 
   const features = {
     free: [
@@ -64,12 +79,12 @@ export default function PremiumUpgrade({ user }: PremiumUpgradeProps) {
       "Advanced analytics",
       "White-label options",
     ],
-  }
+  };
 
   return (
     <div className="space-y-6">
       {/* Current Plan Status */}
-      <Card>
+      {/* <Card>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -82,12 +97,12 @@ export default function PremiumUpgrade({ user }: PremiumUpgradeProps) {
             <Badge variant="outline">Free Tier</Badge>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Pricing Plans */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Free Plan */}
-        <Card className="relative">
+        {/* <Card className="relative">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Zap className="h-5 w-5 text-gray-600" />
@@ -110,10 +125,10 @@ export default function PremiumUpgrade({ user }: PremiumUpgradeProps) {
               Current Plan
             </Button>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Pro Plan */}
-        <Card className="relative border-blue-200 shadow-lg">
+        {/* <Card className="relative border-blue-200 shadow-lg">
           <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
             <Badge className="bg-blue-600 text-white">Most Popular</Badge>
           </div>
@@ -139,10 +154,10 @@ export default function PremiumUpgrade({ user }: PremiumUpgradeProps) {
               {loading ? "Processing..." : "Upgrade to Pro"}
             </Button>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Enterprise Plan */}
-        <Card className="relative">
+        {/* <Card className="relative">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Crown className="h-5 w-5 text-amber-600" />
@@ -165,11 +180,11 @@ export default function PremiumUpgrade({ user }: PremiumUpgradeProps) {
               {loading ? "Processing..." : "Contact Sales"}
             </Button>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
 
       {/* Feature Comparison */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle>Feature Comparison</CardTitle>
           <CardDescription>See what's included in each plan</CardDescription>
@@ -226,7 +241,7 @@ export default function PremiumUpgrade({ user }: PremiumUpgradeProps) {
             </table>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* FAQ */}
       <Card>
@@ -235,25 +250,33 @@ export default function PremiumUpgrade({ user }: PremiumUpgradeProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <h4 className="font-medium mb-2">Can I change plans anytime?</h4>
+            <h4 className="font-medium mb-2">What does this platform do?</h4>
             <p className="text-sm text-gray-600">
-              Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately.
+              Our platform lets you sync your HubSpot CMS pages with Google
+              Sheets, allowing for easy backups, version tracking, and manual
+              content editing.
             </p>
           </div>
           <div>
-            <h4 className="font-medium mb-2">What happens to my data if I downgrade?</h4>
+            <h4 className="font-medium mb-2">Is my HubSpot content safe?</h4>
             <p className="text-sm text-gray-600">
-              Your data remains safe. Some premium features may become unavailable, but your backups are preserved.
+              Yes, we never modify your live HubSpot pages without your
+              permission. All backups are stored in your own Google Sheets for
+              full transparency and control.
             </p>
           </div>
           <div>
-            <h4 className="font-medium mb-2">Do you offer refunds?</h4>
+            <h4 className="font-medium mb-2">
+              Do I need coding experience to use this?
+            </h4>
             <p className="text-sm text-gray-600">
-              Yes, we offer a 30-day money-back guarantee for all paid plans. No questions asked.
+              Not at all. The entire system is designed for non-technical users
+              — just connect your HubSpot and Google accounts, and you're good
+              to go.
             </p>
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
