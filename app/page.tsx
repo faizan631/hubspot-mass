@@ -39,9 +39,7 @@ export default function HomePage() {
                 <p className="text-xs text-gray-500">HubSpot Backup & Sync</p>
               </div>
             </div>
-            <div>
-              <button onClick={handleLogin}>Login To Our Website</button>
-            </div>
+
             <Badge
               variant="outline"
               className="bg-green-50 text-green-700 border-green-200"
@@ -49,6 +47,10 @@ export default function HomePage() {
               <CheckCircle className="w-3 h-3 mr-1" />
               Free to Start
             </Badge>
+
+            <div>
+              <button className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-full px-4 font-bold py-2 text-white" onClick={handleLogin}>Login To Our Website</button>
+            </div>
           </div>
         </div>
       </header>
