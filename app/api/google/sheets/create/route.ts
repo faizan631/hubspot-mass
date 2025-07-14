@@ -29,9 +29,7 @@ export async function POST(request: NextRequest) {
     // Get user's Google tokens
     const { data: userSettings, error: settingsError } = await supabase
       .from("user_settings")
-      .select(
-        "google_access_token, google_refresh_token, google_token_expires_at"
-      )
+      .select("google_access_token")
       .eq("user_id", user.id)
       .single();
 
@@ -42,117 +40,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Set up Google Sheets API
     const auth = new google.auth.OAuth2();
     auth.setCredentials({ access_token: userSettings.google_access_token });
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    // Create new spreadsheet
+    // ✅ Create spreadsheet with just the title
     const createResponse = await sheets.spreadsheets.create({
       requestBody: {
-        properties: {
-          title: name,
-        },
-        sheets: [
-          {
-            properties: {
-              title: "HubSpot Pages",
-              gridProperties: {
-                rowCount: 1000,
-                columnCount: 20,
-              },
-            },
-          },
-        ],
+        properties: { title: name },
       },
     });
 
     const spreadsheetId = createResponse.data.spreadsheetId!;
     const spreadsheetUrl = createResponse.data.spreadsheetUrl!;
 
-    // ✅ Get the actual sheetId from the response
-    const sheetId = createResponse.data.sheets?.[0].properties?.sheetId;
-    if (!sheetId) {
-      throw new Error(
-        "Failed to retrieve sheetId from the spreadsheet response"
-      );
-    }
-
-    // Add headers to the sheet
-    const headers = [
-      "Backup Date",
-      "Page ID",
-      "Page Name",
-      "Page URL",
-      "HTML Title",
-      "Meta Description",
-      "Slug",
-      "State",
-      "Created At",
-      "Updated At",
-      "Created By",
-      "Updated By",
-      "Language",
-      "Campaign",
-      "Content Group ID",
-      "Domain",
-      "Subdomain",
-      "Archive Status",
-      "Page Type",
-      "Template Path",
-    ];
-
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: "HubSpot Pages!A1:T1",
-      valueInputOption: "RAW",
-      requestBody: {
-        values: [headers],
-      },
-    });
-
-    // Format the header row
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId,
-      requestBody: {
-        requests: [
-          {
-            repeatCell: {
-              range: {
-                sheetId, // ✅ Use dynamic sheet ID here
-                startRowIndex: 0,
-                endRowIndex: 1,
-                startColumnIndex: 0,
-                endColumnIndex: headers.length,
-              },
-              cell: {
-                userEnteredFormat: {
-                  backgroundColor: { red: 0.2, green: 0.4, blue: 0.8 },
-                  textFormat: {
-                    foregroundColor: { red: 1, green: 1, blue: 1 },
-                    bold: true,
-                  },
-                },
-              },
-              fields: "userEnteredFormat(backgroundColor,textFormat)",
-            },
-          },
-          {
-            autoResizeDimensions: {
-              dimensions: {
-                sheetId, // ✅ Use dynamic sheet ID here
-                dimension: "COLUMNS",
-                startIndex: 0,
-                endIndex: headers.length,
-              },
-            },
-          },
-        ],
-      },
-    });
-
-    // Log the creation
+    // ✅ Log the creation (optional)
     await supabase.from("audit_logs").insert({
       user_id: user.id,
       action_type: "create",
@@ -161,7 +64,6 @@ export async function POST(request: NextRequest) {
       details: {
         sheet_name: name,
         sheet_url: spreadsheetUrl,
-        headers_count: headers.length,
       },
     });
 
