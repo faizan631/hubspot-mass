@@ -1,11 +1,9 @@
-// FILE: /api/sync/preview-changes/route.ts
-
 import { createClient } from "@/lib/supabase/server";
 import { type NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { diff_match_patch } from "diff-match-patch";
 
-// *** This is the new, reusable helper function to get a valid Google client ***
+// Reusable helper to get refreshed, authenticated Google Sheets client
 async function getRefreshedGoogleClient(userId: string, supabase: any) {
   const { data: userSettings, error } = await supabase
     .from("user_settings")
@@ -14,7 +12,6 @@ async function getRefreshedGoogleClient(userId: string, supabase: any) {
     .single();
 
   if (error || !userSettings?.google_refresh_token) {
-    // If there's no refresh token, the user needs to re-authenticate.
     throw new Error(
       "Google connection not found or refresh token is missing. Please reconnect your Google account."
     );
@@ -26,18 +23,12 @@ async function getRefreshedGoogleClient(userId: string, supabase: any) {
     process.env.GOOGLE_REDIRECT_URI
   );
 
-  // Set the refresh token so the client knows how to get a new access token.
   oauth2Client.setCredentials({
     refresh_token: userSettings.google_refresh_token,
   });
 
-  // The googleapis library is smart. It will check if the access token is expired
-  // and automatically use the refresh token to get a new one if necessary.
-  // We can directly request a new token to be sure and update our DB.
   const { token: newAccessToken } = await oauth2Client.getAccessToken();
 
-  // It's good practice to update the database with the new access token,
-  // though the client will hold it in memory for subsequent requests in this session.
   if (newAccessToken && newAccessToken !== userSettings.google_access_token) {
     await supabase
       .from("user_settings")
@@ -45,17 +36,15 @@ async function getRefreshedGoogleClient(userId: string, supabase: any) {
       .eq("user_id", userId);
   }
 
-  // Set the full credentials on the client for the current request
   oauth2Client.setCredentials({
     access_token: newAccessToken,
     refresh_token: userSettings.google_refresh_token,
   });
 
-  // Return a ready-to-use Sheets API client
   return google.sheets({ version: "v4", auth: oauth2Client });
 }
 
-// Helper function to find column index (no changes needed)
+// Reusable helper to find column index by header name
 function getColumnIndex(headers: string[], name: string): number {
   return headers.findIndex(
     (h) => h.toLowerCase().trim() === name.toLowerCase().trim()
@@ -78,6 +67,7 @@ export async function POST(request: NextRequest) {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser();
+
     if (authError || !user || user.id !== userId) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
@@ -85,11 +75,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // *** THE FIX: Use our new helper to get a guaranteed valid Google Sheets client ***
     const sheets = await getRefreshedGoogleClient(user.id, supabase);
 
-    // 2. Fetch the LATEST data from the user's Google Sheet
-    console.log(`Fetching data from Google Sheet: '${sheetName}'`);
     const sheetResponse = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
       range: `'${sheetName}'`,
@@ -105,24 +92,59 @@ export async function POST(request: NextRequest) {
     }
 
     const headers = sheetRows.shift()!.map((h) => String(h));
-    const idIndex = getColumnIndex(headers, "ID");
-    const nameIndex = getColumnIndex(headers, "Name");
-    const bodyIndex = getColumnIndex(headers, "Body Content");
 
-    if (idIndex === -1 || bodyIndex === -1) {
-      throw new Error(
-        "Could not find required columns ('ID', 'Body Content') in the sheet."
-      );
+    const columnsToCompare = {
+      ID: "hubspot_page_id",
+      Name: "name",
+      URL: "url",
+      "HTML Title": "html_title",
+      "Meta Description": "meta_description",
+      Slug: "slug",
+      "Body Content": "body_content",
+    };
+
+    const columnIndexes: { [key: string]: number } = {};
+    for (const header in columnsToCompare) {
+      const propName =
+        columnsToCompare[header as keyof typeof columnsToCompare];
+      columnIndexes[propName] = getColumnIndex(headers, header);
     }
 
-    const sheetDataMap = new Map(
-      sheetRows.map((row) => [
-        row[idIndex],
-        { name: row[nameIndex] || "", body_content: row[bodyIndex] || "" },
-      ])
-    );
+    if (columnIndexes.hubspot_page_id === -1) {
+      throw new Error("Could not find required column 'ID' in the sheet.");
+    }
 
-    // 3. Fetch the MOST RECENT backup snapshot from your Supabase DB
+    // --- START: NEW LOGIC TO HANDLE APPEND-ONLY SHEETS ---
+
+    // 1. Create a map to hold only the most recent version of each page from the sheet.
+    const latestSheetDataMap = new Map();
+
+    // 2. Iterate through all rows to find the last entry for each unique page ID.
+    for (let i = 0; i < sheetRows.length; i++) {
+      const row = sheetRows[i];
+      const pageId = row[columnIndexes.hubspot_page_id];
+      if (!pageId) continue; // Skip rows without an ID
+
+      const sheetRowNumber = i + 2; // Get the original row number for location tracking
+
+      const pageData: { [key: string]: any } = {};
+      for (const propName in columnIndexes) {
+        const index = columnIndexes[propName];
+        if (index !== -1) {
+          pageData[propName] = row[index] || "";
+        }
+      }
+
+      // By repeatedly setting the key, we ensure only the last (most recent) entry remains.
+      // We also store its original location from the sheet.
+      latestSheetDataMap.set(pageId, {
+        values: pageData,
+        originalRow: sheetRowNumber,
+      });
+    }
+
+    // --- END: NEW LOGIC TO HANDLE APPEND-ONLY SHEETS ---
+
     const { data: latestBackupRun, error: backupIdError } = await supabase
       .from("hubspot_page_backups")
       .select("backup_id")
@@ -146,45 +168,78 @@ export async function POST(request: NextRequest) {
       .eq("backup_id", latestBackupRun.backup_id);
 
     if (dbError) throw dbError;
+
     const supabaseDataMap = new Map(
       dbBackupData.map((row) => [row.hubspot_page_id, row])
     );
 
-    // 4. Compare the two datasets and generate a "diff"
     const changes: any[] = [];
     const dmp = new diff_match_patch();
 
-    for (const [pageId, sheetPage] of sheetDataMap.entries()) {
+    // --- START: UPDATED COMPARISON LOOP ---
+    // Now, iterate over our clean map of LATEST sheet entries, not the raw sheet rows.
+    for (const [pageId, sheetEntry] of latestSheetDataMap.entries()) {
       const dbPage = supabaseDataMap.get(pageId);
-      if (dbPage) {
-        const modifiedFields: any = {};
-        let isModified = false;
-        if (sheetPage.name !== dbPage.name) {
-          isModified = true;
-          modifiedFields.name = { old: dbPage.name, new: sheetPage.name };
+      if (!dbPage) continue;
+
+      const sheetPage = sheetEntry.values;
+      const sheetRowNumber = sheetEntry.originalRow;
+
+      const modifiedFields: any = {};
+      let isModified = false;
+
+      // Compare all properties
+      for (const propName in sheetPage) {
+        if (propName === "hubspot_page_id" || propName === "body_content") {
+          continue;
         }
-        if (sheetPage.body_content !== dbPage.body_content) {
+
+        if (sheetPage[propName] !== dbPage[propName]) {
           isModified = true;
-          const diff = dmp.diff_main(
-            dbPage.body_content || "",
-            sheetPage.body_content || ""
-          );
-          dmp.diff_cleanupSemantic(diff);
-          modifiedFields.body_content_diff = dmp.diff_prettyHtml(diff);
-        }
-        if (isModified) {
-          changes.push({
-            pageId: pageId,
-            name: sheetPage.name,
-            type: "modified",
-            fields: modifiedFields,
-          });
+          modifiedFields[propName] = {
+            old: dbPage[propName] || "",
+            new: sheetPage[propName],
+            location: {
+              row: sheetRowNumber,
+              column: columnIndexes[propName] + 1,
+            },
+          };
         }
       }
-    }
 
-    console.log(`Found ${changes.length} modified pages.`);
-    return NextResponse.json({ success: true, changes: changes });
+      // Special handling for body_content
+      if (
+        sheetPage.hasOwnProperty("body_content") &&
+        sheetPage.body_content !== dbPage.body_content
+      ) {
+        isModified = true;
+        const diff = dmp.diff_main(
+          dbPage.body_content || "",
+          sheetPage.body_content || ""
+        );
+        dmp.diff_cleanupSemantic(diff);
+
+        modifiedFields.body_content_diff = {
+          diffHtml: dmp.diff_prettyHtml(diff),
+          location: {
+            row: sheetRowNumber,
+            column: columnIndexes.body_content + 1,
+          },
+        };
+      }
+
+      if (isModified) {
+        changes.push({
+          pageId: pageId,
+          name: sheetPage.name || dbPage.name,
+          type: "modified",
+          fields: modifiedFields,
+        });
+      }
+    }
+    // --- END: UPDATED COMPARISON LOOP ---
+
+    return NextResponse.json({ success: true, changes });
   } catch (error) {
     console.error("Preview changes error:", error);
     const errorMessage =

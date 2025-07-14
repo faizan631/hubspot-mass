@@ -40,6 +40,16 @@ interface BackupSession {
   error_message?: string;
 }
 
+// Helper to make field names pretty
+const fieldDisplayNames: { [key: string]: string } = {
+  name: "Name",
+  url: "URL",
+  html_title: "HTML Title",
+  meta_description: "Meta Description",
+  slug: "Slug",
+  body_content_diff: "Body Content Changes",
+};
+
 export default function BackupManager({
   user,
   hubspotToken,
@@ -53,8 +63,6 @@ export default function BackupManager({
   const [selectedSheetId, setSelectedSheetId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-
-  // State for the Sync & Preview feature
   const [changes, setChanges] = useState<any[]>([]);
   const [isPreviewing, setIsPreviewing] = useState(false);
 
@@ -97,7 +105,6 @@ export default function BackupManager({
       const data = await response.json();
       if (data.success && data.settings) {
         setGoogleConnected(!!data.settings.google_access_token);
-        // This is the key: get the correct sheet ID from settings
         setSelectedSheetId(data.settings.backup_sheet_id || "");
       }
     } catch (error) {
@@ -167,7 +174,6 @@ export default function BackupManager({
     setIsBackingUp(false);
   };
 
-  // *** THIS FUNCTION WAS MISSING. IT IS NOW CORRECTLY DEFINED HERE. ***
   const previewChanges = async () => {
     if (!selectedSheetId) {
       toast({
@@ -342,7 +348,6 @@ export default function BackupManager({
         </CardContent>
       </Card>
 
-      {/* This card will now correctly appear when a sheet is selected */}
       {selectedSheetId && (
         <Card>
           <CardHeader>
@@ -387,31 +392,45 @@ export default function BackupManager({
                         (ID: {change.pageId})
                       </span>
                     </h4>
-                    {change.fields.name && (
-                      <div>
-                        <strong className="text-sm">Name:</strong>
-                        <div className="text-sm p-2 rounded bg-white mt-1">
-                          <del className="text-red-600">
-                            {change.fields.name.old}
-                          </del>
-                          <ins className="text-green-600 no-underline ml-2">
-                            {change.fields.name.new}
-                          </ins>
+
+                    {Object.entries(change.fields).map(
+                      ([fieldKey, value]: [string, any]) => (
+                        <div key={fieldKey}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <strong className="text-sm">
+                              {fieldDisplayNames[fieldKey] || fieldKey}:
+                            </strong>
+                            {value.location && (
+                              <Badge
+                                variant="secondary"
+                                className="font-mono text-xs font-normal"
+                              >
+                                Row {value.location.row}, Col{" "}
+                                {value.location.column}
+                              </Badge>
+                            )}
+                          </div>
+
+                          {fieldKey === "body_content_diff" ? (
+                            <div
+                              className="diff-container border rounded mt-1 p-3 text-sm leading-relaxed bg-white"
+                              dangerouslySetInnerHTML={{
+                                __html: value.diffHtml,
+                              }}
+                            />
+                          ) : (
+                            <div className="text-sm p-2 rounded bg-white mt-1 font-mono">
+                              <span className="text-red-600 line-through">
+                                {value.old || "(empty)"}
+                              </span>
+                              <span className="text-gray-400 mx-2">→</span>
+                              <span className="text-green-600">
+                                {value.new || "(empty)"}
+                              </span>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
-                    {change.fields.body_content_diff && (
-                      <div>
-                        <strong className="text-sm">
-                          Body Content Changes:
-                        </strong>
-                        <div
-                          className="diff-container border rounded mt-1 p-3 text-sm leading-relaxed bg-white"
-                          dangerouslySetInnerHTML={{
-                            __html: change.fields.body_content_diff,
-                          }}
-                        />
-                      </div>
+                      )
                     )}
                   </div>
                 ))}
