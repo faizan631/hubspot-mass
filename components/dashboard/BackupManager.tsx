@@ -1,4 +1,4 @@
-// FILE: BackupManager.tsx (Corrected and Final)
+// FILE: BackupManager.tsx (Final Version with AlertDialog)
 
 "use client";
 
@@ -27,6 +27,19 @@ import {
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import GoogleSheetsConnect from "../auth/GoogleSheetsConnect";
+
+// NEW: Import AlertDialog components
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface BackupManagerProps {
   user: User;
@@ -217,14 +230,7 @@ export default function BackupManager({
   const syncChangesToHubspot = async () => {
     if (changes.length === 0) return;
 
-    if (
-      !window.confirm(
-        `Are you sure you want to sync ${changes.length} change(s) to HubSpot? This action is irreversible.`
-      )
-    ) {
-      return;
-    }
-
+    // The window.confirm is now handled by the AlertDialog
     setIsSyncing(true);
     try {
       const response = await fetch("/api/sync/to-hubspot", {
@@ -484,24 +490,48 @@ export default function BackupManager({
                   </div>
                 ))}
 
-                {/* --- THIS IS THE CORRECTED BUTTON --- */}
-                <Button
-                  onClick={syncChangesToHubspot}
-                  disabled={isSyncing}
-                  className="w-full bg-green-600 hover:bg-green-700"
-                >
-                  {isSyncing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Syncing to HubSpot...
-                    </>
-                  ) : (
-                    <>
-                      <UploadCloud className="mr-2 h-4 w-4" />
-                      Confirm and Sync {changes.length} Changes
-                    </>
-                  )}
-                </Button>
+                {/* --- REPLACED BUTTON WITH ALERTDIALOG --- */}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      disabled={isSyncing}
+                      className="w-full bg-green-600 hover:bg-green-700"
+                    >
+                      {isSyncing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Syncing...
+                        </>
+                      ) : (
+                        <>
+                          <UploadCloud className="mr-2 h-4 w-4" />
+                          Confirm and Sync {changes.length} Changes
+                        </>
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Are you absolutely sure?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will sync {changes.length} change(s) directly to
+                        HubSpot. This action cannot be undone and will overwrite
+                        the live content.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={syncChangesToHubspot}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        Yes, Sync Changes
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             )}
 
