@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { google } from "googleapis";
 
+// This is changed user name
 export async function POST(request: NextRequest) {
   try {
     const { name, userId } = await request.json();
