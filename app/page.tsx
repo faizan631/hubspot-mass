@@ -1,3 +1,4 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,8 +13,14 @@ import {
   Clock,
 } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
-export default async function HomePage() {
+export default function HomePage() {
+  const router = useRouter();
+
+  const handleLogin = () => {
+    router.push("/auth");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -32,6 +39,9 @@ export default async function HomePage() {
                 <p className="text-xs text-gray-500">HubSpot Backup & Sync</p>
               </div>
             </div>
+            <div>
+              <button onClick={handleLogin}>Login To Our Website</button>
+            </div>
             <Badge
               variant="outline"
               className="bg-green-50 text-green-700 border-green-200"
@@ -44,7 +54,6 @@ export default async function HomePage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-
         {/* Hero Section */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium mb-6">

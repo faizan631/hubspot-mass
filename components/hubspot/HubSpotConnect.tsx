@@ -496,7 +496,7 @@ export default function HubSpotConnect({ user, userSettings, onConnectionUpdate 
       </Card>
 
       {/* Strategy Information */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle>Backup Strategy</CardTitle>
         </CardHeader>
@@ -528,7 +528,7 @@ export default function HubSpotConnect({ user, userSettings, onConnectionUpdate 
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   )
 }
