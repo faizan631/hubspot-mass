@@ -1,3 +1,5 @@
+// FILE: BackupManager.tsx (Corrected and Final)
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -21,6 +23,7 @@ import {
   Loader2,
   FileSpreadsheet,
   GitPullRequest,
+  UploadCloud,
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import GoogleSheetsConnect from "../auth/GoogleSheetsConnect";
@@ -40,13 +43,13 @@ interface BackupSession {
   error_message?: string;
 }
 
-// Helper to make field names pretty
 const fieldDisplayNames: { [key: string]: string } = {
   name: "Name",
   url: "URL",
   html_title: "HTML Title",
   meta_description: "Meta Description",
   slug: "Slug",
+  body_content: "Body Content",
   body_content_diff: "Body Content Changes",
 };
 
@@ -65,6 +68,7 @@ export default function BackupManager({
   const { toast } = useToast();
   const [changes, setChanges] = useState<any[]>([]);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     loadBackupHistory();
@@ -81,14 +85,6 @@ export default function BackupManager({
           total_pages: 25,
           started_at: new Date(Date.now() - 3600000).toISOString(),
           completed_at: new Date(Date.now() - 3500000).toISOString(),
-        },
-        {
-          id: "2",
-          status: "completed",
-          pages_backed_up: 23,
-          total_pages: 23,
-          started_at: new Date(Date.now() - 86400000).toISOString(),
-          completed_at: new Date(Date.now() - 86300000).toISOString(),
         },
       ];
       setBackupSessions(mockSessions);
@@ -216,6 +212,55 @@ export default function BackupManager({
       });
     }
     setIsPreviewing(false);
+  };
+
+  const syncChangesToHubspot = async () => {
+    if (changes.length === 0) return;
+
+    if (
+      !window.confirm(
+        `Are you sure you want to sync ${changes.length} change(s) to HubSpot? This action is irreversible.`
+      )
+    ) {
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      const response = await fetch("/api/sync/to-hubspot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          hubspotToken,
+          changes,
+        }),
+      });
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || "Syncing failed.");
+      }
+
+      toast({
+        title: "Sync Complete!",
+        description: `✅ ${data.succeeded.length} succeeded, ❌ ${data.failed.length} failed.`,
+      });
+
+      if (data.failed.length > 0) {
+        console.error("Failed syncs:", data.failed);
+      }
+      setChanges([]);
+    } catch (error) {
+      toast({
+        title: "Error Syncing Changes",
+        description:
+          error instanceof Error ? error.message : "An unknown error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -363,23 +408,23 @@ export default function BackupManager({
           <CardContent className="space-y-6">
             <Button
               onClick={previewChanges}
-              disabled={isPreviewing}
+              disabled={isPreviewing || isSyncing}
               className="w-full"
             >
               {isPreviewing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Comparing Sheet vs. Backup...
+                  Comparing...
                 </>
               ) : (
-                "Preview Changes from Google Sheet"
+                "Preview Changes"
               )}
             </Button>
 
             {!isPreviewing && changes.length > 0 && (
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2">
-                  Review {changes.length} Change(s)
+                  Review {changes.length} Page(s) with Changes
                 </h3>
                 {changes.map((change) => (
                   <div
@@ -394,52 +439,68 @@ export default function BackupManager({
                     </h4>
 
                     {Object.entries(change.fields).map(
-                      ([fieldKey, value]: [string, any]) => (
-                        <div key={fieldKey}>
-                          <div className="flex items-center gap-2 mb-1">
-                            <strong className="text-sm">
-                              {fieldDisplayNames[fieldKey] || fieldKey}:
-                            </strong>
-                            {value.location && (
-                              <Badge
-                                variant="secondary"
-                                className="font-mono text-xs font-normal"
-                              >
-                                Row {value.location.row}, Col{" "}
-                                {value.location.column}
-                              </Badge>
+                      ([fieldKey, value]: [string, any]) => {
+                        if (fieldKey === "body_content") return null;
+
+                        return (
+                          <div key={fieldKey}>
+                            <div className="flex items-center gap-2 mb-1">
+                              <strong className="text-sm">
+                                {fieldDisplayNames[fieldKey] || fieldKey}:
+                              </strong>
+                              {value.location && (
+                                <Badge
+                                  variant="secondary"
+                                  className="font-mono text-xs font-normal"
+                                >
+                                  Row {value.location.row}, Col{" "}
+                                  {value.location.column}
+                                </Badge>
+                              )}
+                            </div>
+
+                            {fieldKey === "body_content_diff" ? (
+                              <div
+                                className="diff-container border rounded mt-1 p-3 text-sm leading-relaxed bg-white"
+                                dangerouslySetInnerHTML={{
+                                  __html: value.diffHtml,
+                                }}
+                              />
+                            ) : (
+                              <div className="text-sm p-2 rounded bg-white mt-1 font-mono">
+                                <span className="text-red-600 line-through">
+                                  {value.old || "(empty)"}
+                                </span>
+                                <span className="text-gray-400 mx-2">→</span>
+                                <span className="text-green-600">
+                                  {value.new || "(empty)"}
+                                </span>
+                              </div>
                             )}
                           </div>
-
-                          {fieldKey === "body_content_diff" ? (
-                            <div
-                              className="diff-container border rounded mt-1 p-3 text-sm leading-relaxed bg-white"
-                              dangerouslySetInnerHTML={{
-                                __html: value.diffHtml,
-                              }}
-                            />
-                          ) : (
-                            <div className="text-sm p-2 rounded bg-white mt-1 font-mono">
-                              <span className="text-red-600 line-through">
-                                {value.old || "(empty)"}
-                              </span>
-                              <span className="text-gray-400 mx-2">→</span>
-                              <span className="text-green-600">
-                                {value.new || "(empty)"}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )
+                        );
+                      }
                     )}
                   </div>
                 ))}
+
+                {/* --- THIS IS THE CORRECTED BUTTON --- */}
                 <Button
+                  onClick={syncChangesToHubspot}
+                  disabled={isSyncing}
                   className="w-full bg-green-600 hover:bg-green-700"
-                  disabled
                 >
-                  Confirm and Sync {changes.length} Changes to HubSpot (Coming
-                  Soon)
+                  {isSyncing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Syncing to HubSpot...
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud className="mr-2 h-4 w-4" />
+                      Confirm and Sync {changes.length} Changes
+                    </>
+                  )}
                 </Button>
               </div>
             )}

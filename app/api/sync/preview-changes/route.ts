@@ -1,9 +1,11 @@
+// FILE: /api/sync/preview-changes/route.ts
+
 import { createClient } from "@/lib/supabase/server";
 import { type NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { diff_match_patch } from "diff-match-patch";
 
-// Reusable helper to get refreshed, authenticated Google Sheets client
+// ... (getRefreshedGoogleClient and getColumnIndex functions are unchanged) ...
 async function getRefreshedGoogleClient(userId: string, supabase: any) {
   const { data: userSettings, error } = await supabase
     .from("user_settings")
@@ -43,8 +45,6 @@ async function getRefreshedGoogleClient(userId: string, supabase: any) {
 
   return google.sheets({ version: "v4", auth: oauth2Client });
 }
-
-// Reusable helper to find column index by header name
 function getColumnIndex(headers: string[], name: string): number {
   return headers.findIndex(
     (h) => h.toLowerCase().trim() === name.toLowerCase().trim()
@@ -114,18 +114,12 @@ export async function POST(request: NextRequest) {
       throw new Error("Could not find required column 'ID' in the sheet.");
     }
 
-    // --- START: NEW LOGIC TO HANDLE APPEND-ONLY SHEETS ---
-
-    // 1. Create a map to hold only the most recent version of each page from the sheet.
     const latestSheetDataMap = new Map();
-
-    // 2. Iterate through all rows to find the last entry for each unique page ID.
     for (let i = 0; i < sheetRows.length; i++) {
       const row = sheetRows[i];
       const pageId = row[columnIndexes.hubspot_page_id];
-      if (!pageId) continue; // Skip rows without an ID
-
-      const sheetRowNumber = i + 2; // Get the original row number for location tracking
+      if (!pageId) continue;
+      const sheetRowNumber = i + 2;
 
       const pageData: { [key: string]: any } = {};
       for (const propName in columnIndexes) {
@@ -134,16 +128,11 @@ export async function POST(request: NextRequest) {
           pageData[propName] = row[index] || "";
         }
       }
-
-      // By repeatedly setting the key, we ensure only the last (most recent) entry remains.
-      // We also store its original location from the sheet.
       latestSheetDataMap.set(pageId, {
         values: pageData,
         originalRow: sheetRowNumber,
       });
     }
-
-    // --- END: NEW LOGIC TO HANDLE APPEND-ONLY SHEETS ---
 
     const { data: latestBackupRun, error: backupIdError } = await supabase
       .from("hubspot_page_backups")
@@ -176,8 +165,6 @@ export async function POST(request: NextRequest) {
     const changes: any[] = [];
     const dmp = new diff_match_patch();
 
-    // --- START: UPDATED COMPARISON LOOP ---
-    // Now, iterate over our clean map of LATEST sheet entries, not the raw sheet rows.
     for (const [pageId, sheetEntry] of latestSheetDataMap.entries()) {
       const dbPage = supabaseDataMap.get(pageId);
       if (!dbPage) continue;
@@ -188,11 +175,13 @@ export async function POST(request: NextRequest) {
       const modifiedFields: any = {};
       let isModified = false;
 
-      // Compare all properties
       for (const propName in sheetPage) {
+        // *** START MODIFICATION ***
+        // Exclude body_content from this generic loop; handle it separately.
         if (propName === "hubspot_page_id" || propName === "body_content") {
           continue;
         }
+        // *** END MODIFICATION ***
 
         if (sheetPage[propName] !== dbPage[propName]) {
           isModified = true;
@@ -219,6 +208,12 @@ export async function POST(request: NextRequest) {
         );
         dmp.diff_cleanupSemantic(diff);
 
+        // *** CRITICAL CHANGE HERE ***
+        // We add BOTH the data for syncing (body_content) AND the visual diff for display.
+        modifiedFields.body_content = {
+          old: dbPage.body_content || "",
+          new: sheetPage.body_content,
+        };
         modifiedFields.body_content_diff = {
           diffHtml: dmp.diff_prettyHtml(diff),
           location: {
@@ -237,7 +232,6 @@ export async function POST(request: NextRequest) {
         });
       }
     }
-    // --- END: UPDATED COMPARISON LOOP ---
 
     return NextResponse.json({ success: true, changes });
   } catch (error) {
