@@ -1,10 +1,8 @@
-// FILE: /api/backup/sync-to-sheets/route.ts (Corrected with Overwrite Logic)
-
 import { createClient } from "@/lib/supabase/server";
 import { type NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 
-// --- HELPER FUNCTIONS (Unchanged) ---
+// --- HELPER FUNCTIONS (These are correct, no changes needed) ---
 async function fetchAllPaginatedHubspotItems(
   initialUrl: string,
   token: string,
@@ -119,7 +117,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // --- Steps 1 & 2: Fetching data (Unchanged) ---
+    // 1. Fetch ALL content from HubSpot
     console.log("Step 1: Fetching all HubSpot content...");
     const endpoints = {
       "Site Page": "https://api.hubapi.com/cms/v3/pages/site-pages",
@@ -135,6 +133,8 @@ export async function POST(request: NextRequest) {
     const detailedPages = await Promise.all(
       contentList.map((item) => fetchItemDetails(item, hubspotToken))
     );
+
+    // 2. Fetch Scraped pages
     let scrapedPages: any[] = [];
     if (userSettings.website_domain) {
       scrapedPages = await fetchScrapedWebsitePages(
@@ -155,6 +155,7 @@ export async function POST(request: NextRequest) {
       pageType: "Website Page",
       body: p.content?.bodyText || "",
     }));
+
     const allPages = [...detailedPages, ...normalizedScrapedPages];
     if (allPages.length === 0) {
       return NextResponse.json(
@@ -166,24 +167,28 @@ export async function POST(request: NextRequest) {
       `Step 2: Found a total of ${allPages.length} pages to back up.`
     );
 
-    // --- Step 3: Prepare data (Unchanged, but now includes the state) ---
+    // 3. Prepare data for the sheet
+    const backupDate = new Date().toISOString();
     const backupId = `backup_${Date.now()}`;
+
     const headers = [
-      "Backup Date",
-      "ID",
-      "Name",
-      "URL",
-      "HTML Title",
-      "Meta Description",
-      "Slug",
-      "State",
-      "Created/Published At",
-      "Updated At",
-      "Content Type",
-      "Body Content",
+      [
+        "Backup Date",
+        "ID",
+        "Name",
+        "URL",
+        "HTML Title",
+        "Meta Description",
+        "Slug",
+        "State",
+        "Created/Published At",
+        "Updated At",
+        "Content Type",
+        "Body Content",
+      ],
     ];
     const sheetRows = allPages.map((page: any) => [
-      new Date().toISOString(), // Use a consistent timestamp for all rows in this backup
+      backupDate,
       page.id || "",
       page.name || "Untitled",
       page.url || "",
@@ -197,36 +202,72 @@ export async function POST(request: NextRequest) {
       page.body || "",
     ]);
 
-    // --- Step 4: Save to Google Sheets (MODIFIED LOGIC) ---
+    // 4. Save to Google Sheets
     const auth = new google.auth.OAuth2();
     auth.setCredentials({ access_token: userSettings.google_access_token });
     const sheets = google.sheets({ version: "v4", auth });
     const quotedSheetName = `'${sheetName}'`;
 
-    // A. Clear existing data from the sheet (from row 2 downwards)
-    console.log(
-      `Step 3: Clearing previous data from sheet: ${quotedSheetName}`
-    );
+    try {
+      await sheets.spreadsheets.values.get({
+        spreadsheetId: sheetId,
+        range: `${quotedSheetName}!A1`,
+      });
+    } catch (err: any) {
+      if (
+        err.message.includes("Unable to parse range") ||
+        err.message.includes("not found")
+      ) {
+        console.log(
+          `Sheet '${sheetName}' not found. Creating it with headers.`
+        );
+        try {
+          await sheets.spreadsheets.batchUpdate({
+            spreadsheetId: sheetId,
+            requestBody: {
+              requests: [{ addSheet: { properties: { title: sheetName } } }],
+            },
+          });
+        } catch (addSheetErr: any) {
+          if (!addSheetErr.message.includes("already exists"))
+            throw addSheetErr;
+        }
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: sheetId,
+          range: `${quotedSheetName}!A1`,
+          valueInputOption: "RAW",
+          requestBody: { values: headers },
+        });
+      } else {
+        throw err;
+      }
+    }
+
+    // ✅ Clear all previous data from A2 down before appending
+    console.log(`Step 3: Clearing old data from ${quotedSheetName}...`);
     await sheets.spreadsheets.values.clear({
       spreadsheetId: sheetId,
-      range: `${quotedSheetName}!A2:L`, // Clears all columns from row 2 to the end
+      range: `${quotedSheetName}!A2:Z1000`, // Adjust if you expect more columns/rows
     });
 
-    // B. Update the sheet with the new rows starting from A2
-    console.log(`Step 4: Writing ${sheetRows.length} new rows to sheet.`);
-    await sheets.spreadsheets.values.update({
+    console.log(
+      `Appending ${sheetRows.length} fresh rows to sheet: ${quotedSheetName}`
+    );
+    await sheets.spreadsheets.values.append({
       spreadsheetId: sheetId,
-      range: `${quotedSheetName}!A2`, // Start writing at cell A2, right below the headers
+      range: `${quotedSheetName}!A2`,
       valueInputOption: "USER_ENTERED",
+      insertDataOption: "OVERWRITE",
       requestBody: { values: sheetRows },
     });
-    console.log("Google Sheets Overwrite successful.");
+    console.log("Google Sheets update successful.");
 
-    // --- Step 5: Save to Supabase (MODIFIED to include state) ---
+    // 5. Save snapshot to Supabase
     console.log(
-      `Step 5: Saving ${allPages.length} pages to Supabase under backup_id: ${backupId}`
+      `Step 4: Saving ${allPages.length} pages to Supabase under backup_id: ${backupId}`
     );
-    const backupDataForSupabase = allPages.map((page, index) => ({
+
+    const backupDataForSupabase = allPages.map((page) => ({
       user_id: user.id,
       backup_id: backupId,
       hubspot_page_id: String(page.id || "N/A"),
@@ -236,11 +277,7 @@ export async function POST(request: NextRequest) {
       html_title: page.htmlTitle || page.name || "",
       meta_description: page.metaDescription || "",
       slug: page.slug || "",
-      state: page.currentState || page.state || "UNKNOWN", // <-- ADDED STATE
       body_content: page.body || "",
-      created_at: sheetRows[index][8] || new Date().toISOString(), // Use consistent created_at
-      updated_at: sheetRows[index][9] || new Date().toISOString(), // Use consistent updated_at
-      backup_date: sheetRows[index][0], // Use consistent backup_date
     }));
 
     const { error: insertError } = await supabase
@@ -256,9 +293,10 @@ export async function POST(request: NextRequest) {
         `Failed to save backup snapshot to database: ${insertError.message}`
       );
     }
+
     console.log("Successfully saved backup snapshot to Supabase.");
 
-    // --- Step 6: Audit Log (Unchanged) ---
+    // 6. Log to audit trail
     await supabase.from("audit_logs").insert({
       user_id: user.id,
       action_type: "backup_and_snapshot",
@@ -266,7 +304,7 @@ export async function POST(request: NextRequest) {
       resource_id: sheetId,
       details: {
         pages_synced: allPages.length,
-        backup_date: new Date().toISOString(),
+        backup_date: backupDate,
         sheet_name: sheetName,
         db_backup_id: backupId,
       },
