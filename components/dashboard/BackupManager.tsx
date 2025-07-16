@@ -1,4 +1,4 @@
-// FILE: BackupManager.tsx (Final Version with Advanced History Table)
+// FILE: BackupManager.tsx (This is the final, complete, and correct version)
 
 "use client";
 
@@ -12,14 +12,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input"; // New Import
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"; // New Import
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
   Database,
@@ -32,9 +32,9 @@ import {
   History,
   RefreshCcw,
   ExternalLink,
-  Search, // New Icon
-  ChevronLeft, // New Icon
-  ChevronRight, // New Icon
+  Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import GoogleSheetsConnect from "../auth/GoogleSheetsConnect";
@@ -93,7 +93,6 @@ export default function BackupManager({
   const [isSyncing, setIsSyncing] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
 
-  // --- START: New State for Advanced History Table ---
   const [versions, setVersions] = useState<Version[]>([]);
   const [filteredVersions, setFilteredVersions] = useState<Version[]>([]);
   const [isLoadingVersions, setIsLoadingVersions] = useState(true);
@@ -101,8 +100,7 @@ export default function BackupManager({
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const versionsPerPage = 5; // You can adjust this number
-  // --- END: New State ---
+  const versionsPerPage = 5;
 
   useEffect(() => {
     checkGoogleConnection();
@@ -110,26 +108,21 @@ export default function BackupManager({
     setLoading(false);
   }, []);
 
-  // --- START: New useEffect for Filtering and Searching ---
   useEffect(() => {
     let filtered = versions;
-
     if (searchTerm) {
       filtered = filtered.filter((v) =>
         v.version_id.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-
     if (typeFilter !== "all") {
       filtered = filtered.filter(
         (v) => v.type.toLowerCase() === typeFilter.toLowerCase()
       );
     }
-
     setFilteredVersions(filtered);
-    setCurrentPage(1); // Reset to first page on any filter change
+    setCurrentPage(1);
   }, [versions, searchTerm, typeFilter]);
-  // --- END: New useEffect ---
 
   const loadVersionHistory = async () => {
     setIsLoadingVersions(true);
@@ -185,7 +178,7 @@ export default function BackupManager({
         }
         toast({
           title: "Sheet Selection Saved",
-          description: "Your selection has been updated.",
+          description: "Your selection has been updated in the database.",
         });
       } catch (error) {
         toast({
@@ -361,7 +354,6 @@ export default function BackupManager({
     }
   };
 
-  // --- START: New Pagination Logic ---
   const totalPages = Math.ceil(filteredVersions.length / versionsPerPage);
   const paginatedVersions = filteredVersions.slice(
     (currentPage - 1) * versionsPerPage,
@@ -370,7 +362,6 @@ export default function BackupManager({
   const goToPrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const goToNextPage = () =>
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-  // --- END: New Pagination Logic ---
 
   if (loading) {
     return (
@@ -395,6 +386,7 @@ export default function BackupManager({
         }}
         onConnectionUpdate={handleSheetSelection}
       />
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -432,9 +424,143 @@ export default function BackupManager({
           </Button>
         </CardContent>
       </Card>
-      {selectedSheetId && <Card>{/* ... Sync Card is unchanged ... */}</Card>}
 
-      
+      {/* 
+        THIS IS THE KEY SECTION
+        The entire "Sync Changes" card will ONLY render if `selectedSheetId` has a value.
+        To make this appear, you must select a sheet from the dropdown in the `GoogleSheetsConnect` component above.
+      */}
+      {selectedSheetId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <GitPullRequest className="h-5 w-5" />
+              Sync Changes to HubSpot
+            </CardTitle>
+            <CardDescription>
+              After editing in Google Sheets, preview changes and then sync them
+              to HubSpot. This creates a new version.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <Button
+              onClick={previewChanges}
+              disabled={isPreviewing || isSyncing || !!revertingId}
+              className="w-full"
+            >
+              {isPreviewing ? "Comparing..." : "Preview Changes from Sheet"}
+            </Button>
+            {!isPreviewing && changes.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">
+                  Review {changes.length} Page(s) with Changes
+                </h3>
+                {changes.map((change) => (
+                  <div
+                    key={change.pageId}
+                    className="border p-4 rounded-lg space-y-3 bg-slate-50"
+                  >
+                    <h4 className="font-semibold text-base">
+                      {change.name}{" "}
+                      <span className="text-xs font-mono text-gray-500">
+                        (ID: {change.pageId})
+                      </span>
+                    </h4>
+                    {Object.entries(change.fields).map(
+                      ([fieldKey, value]: [string, any]) => {
+                        if (fieldKey === "body_content") return null;
+                        return (
+                          <div key={fieldKey}>
+                            <div className="flex items-center gap-2 mb-1">
+                              <strong className="text-sm">
+                                {fieldDisplayNames[fieldKey] || fieldKey}:
+                              </strong>
+                              {value.location && (
+                                <Badge
+                                  variant="secondary"
+                                  className="font-mono text-xs font-normal"
+                                >
+                                  Row {value.location.row}, Col{" "}
+                                  {value.location.column}
+                                </Badge>
+                              )}
+                            </div>
+                            {fieldKey === "body_content_diff" ? (
+                              <div
+                                className="diff-container border rounded mt-1 p-3 text-sm leading-relaxed bg-white"
+                                dangerouslySetInnerHTML={{
+                                  __html: value.diffHtml,
+                                }}
+                              />
+                            ) : (
+                              <div className="text-sm p-2 rounded bg-white mt-1 font-mono">
+                                <span className="text-red-600 line-through">
+                                  {value.old || "(empty)"}
+                                </span>
+                                <span className="text-gray-400 mx-2">→</span>
+                                <span className="text-green-600">
+                                  {value.new || "(empty)"}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                    )}
+                  </div>
+                ))}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      disabled={isSyncing}
+                      className="w-full bg-green-600 hover:bg-green-700"
+                    >
+                      {isSyncing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Syncing...
+                        </>
+                      ) : (
+                        <>
+                          <UploadCloud className="mr-2 h-4 w-4" />
+                          Confirm and Sync {changes.length} Changes
+                        </>
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Are you absolutely sure?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will sync {changes.length} change(s) directly to
+                        HubSpot and create a new version. This action is
+                        irreversible.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={syncChangesToHubspot}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        Yes, Sync
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            )}
+            {!isPreviewing && changes.length === 0 && (
+              <p className="text-sm text-center text-gray-500 pt-4">
+                Click "Preview Changes" to check for modifications.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -446,7 +572,6 @@ export default function BackupManager({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Filter Controls */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -457,7 +582,6 @@ export default function BackupManager({
                 className="pl-10"
               />
             </div>
-
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by type" />
@@ -478,8 +602,6 @@ export default function BackupManager({
               Refresh History
             </Button>
           </div>
-
-          {/* Table */}
           <div className="border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
@@ -580,8 +702,6 @@ export default function BackupManager({
               </TableBody>
             </Table>
           </div>
-
-          {/* Pagination Controls */}
           {totalPages > 1 && (
             <div className="flex justify-end items-center gap-2 mt-4">
               <Button
