@@ -1,4 +1,4 @@
-// FILE: BackupManager.tsx (Complete with Revert Log Link)
+// FILE: BackupManager.tsx (Corrected to Save Sheet Selection Immediately)
 
 "use client";
 
@@ -26,7 +26,7 @@ import {
   UploadCloud,
   History,
   RefreshCcw,
-  ExternalLink, // New Icon
+  ExternalLink,
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import GoogleSheetsConnect from "../auth/GoogleSheetsConnect";
@@ -103,6 +103,12 @@ export default function BackupManager({
   const [isLoadingVersions, setIsLoadingVersions] = useState(true);
   const [revertingId, setRevertingId] = useState<string | null>(null);
 
+  useEffect(() => {
+    checkGoogleConnection();
+    loadVersionHistory();
+    setLoading(false);
+  }, []);
+
   const loadVersionHistory = async () => {
     setIsLoadingVersions(true);
     try {
@@ -128,12 +134,6 @@ export default function BackupManager({
     }
   };
 
-  useEffect(() => {
-    checkGoogleConnection();
-    loadVersionHistory();
-    setLoading(false);
-  }, []);
-
   const checkGoogleConnection = async () => {
     try {
       const response = await fetch("/api/user/settings");
@@ -148,7 +148,52 @@ export default function BackupManager({
     }
   };
 
+  // --- THIS IS THE CRITICAL FIX ---
+  // This function now saves the selected sheet ID to the database immediately.
+  const handleSheetSelection = async (connected: boolean, sheetId?: string) => {
+    setGoogleConnected(connected);
+    if (sheetId && sheetId !== selectedSheetId) {
+      try {
+        // Update local state immediately for a responsive UI
+        setSelectedSheetId(sheetId);
+
+        // Call the settings API to save the new sheet ID to the database
+        const response = await fetch("/api/user/settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.id,
+            backup_sheet_id: sheetId,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to save selection.");
+        }
+
+        toast({
+          title: "Sheet Selection Saved",
+          description: "Your selection has been updated in the database.",
+        });
+      } catch (error) {
+        toast({
+          title: "Error Saving Selection",
+          description:
+            error instanceof Error
+              ? error.message
+              : "Could not save the selected sheet.",
+          variant: "destructive",
+        });
+        // Optionally, revert the local state if the save fails
+        checkGoogleConnection();
+      }
+    }
+  };
+  // --- END OF FIX ---
+
   const startBackup = async () => {
+    // ... (This function is correct and unchanged)
     if (!hubspotToken || !googleConnected || !selectedSheetId) {
       toast({
         title: "Prerequisites Missing",
@@ -189,6 +234,7 @@ export default function BackupManager({
   };
 
   const previewChanges = async () => {
+    // ... (This function is correct and unchanged)
     if (!selectedSheetId) {
       toast({
         title: "Configuration Missing",
@@ -233,6 +279,7 @@ export default function BackupManager({
   };
 
   const syncChangesToHubspot = async () => {
+    // ... (This function is correct and unchanged)
     if (changes.length === 0) return;
     setIsSyncing(true);
     try {
@@ -267,22 +314,37 @@ export default function BackupManager({
   };
 
   const handleRevert = async (versionId: string) => {
+    if (!selectedSheetId) {
+      toast({
+        title: "No sheet selected",
+        description: "Please select a target sheet before reverting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setRevertingId(versionId);
+
     try {
       const response = await fetch("/api/history/revert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, hubspotToken, versionId }),
+        body: JSON.stringify({
+          userId: user.id,
+          hubspotToken,
+          versionId,
+        }),
       });
+
       const data = await response.json();
+
       if (!data.success) {
         throw new Error(data.error);
       }
 
-      // THIS IS THE FIX: Display the clickable link from the API response
       toast({
         title: "Revert Successful",
-        description: `Successfully reverted site. A log has been saved.`,
+        description: `The site has been reverted. A new Google Sheet file has been created with the revert log.`,
         action: data.revertSheetUrl ? (
           <a
             href={data.revertSheetUrl}
@@ -291,7 +353,7 @@ export default function BackupManager({
           >
             <Button variant="outline" size="sm">
               <ExternalLink className="h-4 w-4 mr-2" />
-              View Log
+              View Revert Log
             </Button>
           </a>
         ) : undefined,
@@ -311,6 +373,7 @@ export default function BackupManager({
   };
 
   if (loading) {
+    // ... (This section is unchanged)
     return (
       <Card>
         <CardContent className="pt-6">
@@ -331,11 +394,9 @@ export default function BackupManager({
           google_access_token: googleConnected,
           backup_sheet_id: selectedSheetId,
         }}
-        onConnectionUpdate={(c, s) => {
-          setGoogleConnected(c);
-          if (s) setSelectedSheetId(s);
-        }}
+        onConnectionUpdate={handleSheetSelection}
       />
+      {/* The rest of the JSX is correct and unchanged */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

@@ -1,23 +1,19 @@
-// FILE: /api/history/revert/route.ts (Final Version with Google Sheet Logging and URL Return)
+// FILE: /api/history/revert/route.ts (Corrected to ALWAYS Create a New File)
 
 import { createClient } from "@/lib/supabase/server";
 import { type NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 
-// This helper function correctly gets an authenticated Google API client
-async function getRefreshedGoogleClient(userId: string, supabase: any) {
+// This helper function gets an authenticated Google API client. It no longer needs to read any sheet IDs.
+async function getAuthenticatedGoogleClient(userId: string, supabase: any) {
   const { data: userSettings, error } = await supabase
     .from("user_settings")
-    .select("google_access_token, google_refresh_token, backup_sheet_id")
+    .select("google_access_token, google_refresh_token")
     .eq("user_id", userId)
     .single();
 
   if (error || !userSettings?.google_refresh_token) {
     throw new Error("Google connection not found or refresh token is missing.");
-  }
-
-  if (!userSettings.backup_sheet_id) {
-    throw new Error("No backup Google Sheet ID is configured for this user.");
   }
 
   const oauth2Client = new google.auth.OAuth2(
@@ -44,10 +40,7 @@ async function getRefreshedGoogleClient(userId: string, supabase: any) {
     refresh_token: userSettings.google_refresh_token,
   });
 
-  return {
-    sheets: google.sheets({ version: "v4", auth: oauth2Client }),
-    spreadsheetId: userSettings.backup_sheet_id,
-  };
+  return google.sheets({ version: "v4", auth: oauth2Client });
 }
 
 const hubspotFieldMapping: { [key: string]: string } = {
@@ -60,7 +53,6 @@ const hubspotFieldMapping: { [key: string]: string } = {
 };
 
 export async function POST(request: NextRequest) {
-  // This variable is declared here so it can be accessed in the final return statement.
   let newSheetUrl = "";
 
   try {
@@ -86,7 +78,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // This correctly fetches the historical data from your database.
     const { data: targetVersionData, error: versionError } = await supabase
       .from("hubspot_page_backups")
       .select("*")
@@ -96,12 +87,9 @@ export async function POST(request: NextRequest) {
       throw new Error(`Could not find version with ID: ${versionId}`);
     }
 
-    // This block correctly creates the new tab and writes the data.
+    // --- START: MODIFIED LOGIC TO ALWAYS CREATE A NEW SPREADSHEET FILE ---
     try {
-      const { sheets, spreadsheetId } = await getRefreshedGoogleClient(
-        user.id,
-        supabase
-      );
+      const sheets = await getAuthenticatedGoogleClient(user.id, supabase);
       const revertTimestamp = new Date().toLocaleString("en-US", {
         month: "short",
         day: "numeric",
@@ -109,25 +97,35 @@ export async function POST(request: NextRequest) {
         minute: "2-digit",
         hour12: true,
       });
-      const newSheetTitle = `Revert - ${revertTimestamp}`;
+      const newSpreadsheetTitle = `HubSpot_Reverted_Data - ${revertTimestamp}`; // Use the name you requested
+      const mainSheetTitle = "Reverted Data";
 
-      // This is the call that ADDS a new tab to your EXISTING file.
-      const addSheetResponse = await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
+      // 1. Create a brand new spreadsheet file
+      const createResponse = await sheets.spreadsheets.create({
         requestBody: {
-          requests: [{ addSheet: { properties: { title: newSheetTitle } } }],
+          properties: {
+            title: newSpreadsheetTitle,
+          },
+          sheets: [
+            {
+              properties: {
+                title: mainSheetTitle,
+              },
+            },
+          ],
         },
       });
 
-      // This logic gets the unique ID of the new tab...
-      const newSheetId =
-        addSheetResponse.data.replies?.[0]?.addSheet?.properties?.sheetId;
+      const newSpreadsheetId = createResponse.data.spreadsheetId;
+      newSheetUrl =
+        createResponse.data.spreadsheetUrl ||
+        `https://docs.google.com/spreadsheets/d/${newSpreadsheetId}/edit`;
 
-      // ...and correctly builds the direct link to that tab.
-      if (newSheetId) {
-        newSheetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit#gid=${newSheetId}`;
+      if (!newSpreadsheetId) {
+        throw new Error("Failed to create new spreadsheet file.");
       }
 
+      // 2. Prepare data and write to the new file
       const headers = [
         "Backup Date",
         "ID",
@@ -158,20 +156,24 @@ export async function POST(request: NextRequest) {
       ]);
 
       await sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: `'${newSheetTitle}'!A1`,
+        spreadsheetId: newSpreadsheetId,
+        range: `'${mainSheetTitle}'!A1`,
         valueInputOption: "USER_ENTERED",
         requestBody: { values: [headers, ...sheetRows] },
       });
     } catch (sheetError) {
-      console.error("Failed to write revert log to Google Sheet:", sheetError);
+      console.error(
+        "Failed to create or write to revert log sheet:",
+        sheetError
+      );
+      newSheetUrl = "";
     }
+    // --- END: MODIFIED LOGIC ---
 
-    // This block correctly syncs the old data back to HubSpot.
+    // The rest of the function (syncing and creating a snapshot) is unchanged.
     const succeeded: any[] = [];
     const failed: any[] = [];
     for (const pageToRevert of targetVersionData) {
-      // ... (all the logic for PATCH and POST to HubSpot is correct)
       const pageId = pageToRevert.hubspot_page_id;
       const pageType = pageToRevert.page_type;
       const contentPayload: { [key: string]: any } = {};
@@ -240,8 +242,6 @@ export async function POST(request: NextRequest) {
         });
       }
     }
-
-    // This block correctly creates a new snapshot in your database for the version history.
     if (succeeded.length > 0) {
       const newRevertSnapshotId = `revert_${Date.now()}`;
       const newSnapshotData = targetVersionData.map((page) => ({
@@ -253,7 +253,6 @@ export async function POST(request: NextRequest) {
       await supabase.from("hubspot_page_backups").insert(newSnapshotData);
     }
 
-    // Finally, this returns the URL you need for the frontend toast.
     return NextResponse.json({
       success: true,
       message: "Revert process completed.",

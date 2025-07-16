@@ -207,7 +207,7 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
 
     setReverting(change.id)
     try {
-      const response = await fetch("/api/backup/revert", {
+      const response = await fetch("/api/history/revert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
