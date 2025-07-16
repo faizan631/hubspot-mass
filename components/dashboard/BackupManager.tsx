@@ -1,4 +1,4 @@
-// FILE: BackupManager.tsx (Final Version with AlertDialog)
+// FILE: BackupManager.tsx (Complete with Revert Log Link)
 
 "use client";
 
@@ -24,11 +24,13 @@ import {
   FileSpreadsheet,
   GitPullRequest,
   UploadCloud,
+  History,
+  RefreshCcw,
+  ExternalLink, // New Icon
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import GoogleSheetsConnect from "../auth/GoogleSheetsConnect";
 
-// NEW: Import AlertDialog components
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +42,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface BackupManagerProps {
   user: User;
@@ -62,9 +72,16 @@ const fieldDisplayNames: { [key: string]: string } = {
   html_title: "HTML Title",
   meta_description: "Meta Description",
   slug: "Slug",
+  state: "State",
   body_content: "Body Content",
   body_content_diff: "Body Content Changes",
 };
+
+interface Version {
+  version_id: string;
+  created_at: string;
+  type: "Sync" | "Backup" | "Revert";
+}
 
 export default function BackupManager({
   user,
@@ -82,30 +99,40 @@ export default function BackupManager({
   const [changes, setChanges] = useState<any[]>([]);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [versions, setVersions] = useState<Version[]>([]);
+  const [isLoadingVersions, setIsLoadingVersions] = useState(true);
+  const [revertingId, setRevertingId] = useState<string | null>(null);
+
+  const loadVersionHistory = async () => {
+    setIsLoadingVersions(true);
+    try {
+      const response = await fetch("/api/history/get-versions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setVersions(data.versions);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to load version history.",
+        variant: "destructive",
+      });
+      console.error(error);
+    } finally {
+      setIsLoadingVersions(false);
+    }
+  };
 
   useEffect(() => {
-    loadBackupHistory();
     checkGoogleConnection();
-  }, []);
-
-  const loadBackupHistory = async () => {
-    try {
-      const mockSessions: BackupSession[] = [
-        {
-          id: "1",
-          status: "completed",
-          pages_backed_up: 25,
-          total_pages: 25,
-          started_at: new Date(Date.now() - 3600000).toISOString(),
-          completed_at: new Date(Date.now() - 3500000).toISOString(),
-        },
-      ];
-      setBackupSessions(mockSessions);
-    } catch (error) {
-      console.error("Error loading backup history:", error);
-    }
+    loadVersionHistory();
     setLoading(false);
-  };
+  }, []);
 
   const checkGoogleConnection = async () => {
     try {
@@ -131,14 +158,6 @@ export default function BackupManager({
       return;
     }
     setIsBackingUp(true);
-    const newBackup: BackupSession = {
-      id: `backup-${Date.now()}`,
-      status: "running",
-      pages_backed_up: 0,
-      total_pages: 0,
-      started_at: new Date().toISOString(),
-    };
-    setCurrentBackup(newBackup);
     try {
       const response = await fetch("/api/backup/sync-to-sheets", {
         method: "POST",
@@ -152,35 +171,21 @@ export default function BackupManager({
       });
       const data = await response.json();
       if (!data.success) throw new Error(data.error || "Backup failed");
-      const completedBackup: BackupSession = {
-        ...newBackup,
-        status: "completed",
-        pages_backed_up: data.pages_synced || 0,
-        total_pages: data.pages_synced || 0,
-        completed_at: new Date().toISOString(),
-      };
-      setCurrentBackup(completedBackup);
-      setBackupSessions([completedBackup, ...backupSessions]);
       toast({
         title: "Backup Completed! 🎉",
         description: `Successfully backed up ${data.pages_synced} pages.`,
       });
+      await loadVersionHistory();
     } catch (error) {
-      const failedBackup: BackupSession = {
-        ...newBackup,
-        status: "failed",
-        error_message: error instanceof Error ? error.message : "Unknown error",
-      };
-      setCurrentBackup(failedBackup);
-      setBackupSessions([failedBackup, ...backupSessions]);
       toast({
         title: "Backup Failed",
         description:
           error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
+    } finally {
+      setIsBackingUp(false);
     }
-    setIsBackingUp(false);
   };
 
   const previewChanges = async () => {
@@ -229,34 +234,26 @@ export default function BackupManager({
 
   const syncChangesToHubspot = async () => {
     if (changes.length === 0) return;
-
-    // The window.confirm is now handled by the AlertDialog
     setIsSyncing(true);
     try {
       const response = await fetch("/api/sync/to-hubspot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user.id,
-          hubspotToken,
-          changes,
-        }),
+        body: JSON.stringify({ userId: user.id, hubspotToken, changes }),
       });
-
       const data = await response.json();
       if (!data.success) {
         throw new Error(data.error || "Syncing failed.");
       }
-
       toast({
         title: "Sync Complete!",
         description: `✅ ${data.succeeded.length} succeeded, ❌ ${data.failed.length} failed.`,
       });
-
       if (data.failed.length > 0) {
         console.error("Failed syncs:", data.failed);
       }
       setChanges([]);
+      await loadVersionHistory();
     } catch (error) {
       toast({
         title: "Error Syncing Changes",
@@ -269,42 +266,48 @@ export default function BackupManager({
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case "failed":
-        return <AlertCircle className="h-4 w-4 text-red-600" />;
-      case "running":
-        return <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />;
-      default:
-        return <Database className="h-4 w-4 text-gray-600" />;
-    }
-  };
+  const handleRevert = async (versionId: string) => {
+    setRevertingId(versionId);
+    try {
+      const response = await fetch("/api/history/revert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, hubspotToken, versionId }),
+      });
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error);
+      }
 
-  const getStatusVariant = (
-    status: string
-  ): "default" | "destructive" | "secondary" | "outline" => {
-    switch (status) {
-      case "completed":
-        return "default";
-      case "failed":
-        return "destructive";
-      case "running":
-        return "secondary";
-      default:
-        return "outline";
-    }
-  };
+      // THIS IS THE FIX: Display the clickable link from the API response
+      toast({
+        title: "Revert Successful",
+        description: `Successfully reverted site. A log has been saved.`,
+        action: data.revertSheetUrl ? (
+          <a
+            href={data.revertSheetUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button variant="outline" size="sm">
+              <ExternalLink className="h-4 w-4 mr-2" />
+              View Log
+            </Button>
+          </a>
+        ) : undefined,
+      });
 
-  const formatDuration = (startTime: string, endTime?: string) => {
-    if (!startTime) return "N/A";
-    const start = new Date(startTime);
-    const end = endTime ? new Date(endTime) : new Date();
-    const duration = Math.round((end.getTime() - start.getTime()) / 1000);
-    if (duration < 60) return `${duration}s`;
-    if (duration < 3600) return `${Math.round(duration / 60)}m`;
-    return `${Math.round(duration / 3600)}h`;
+      await loadVersionHistory();
+    } catch (error) {
+      toast({
+        title: "Revert Failed",
+        description:
+          error instanceof Error ? error.message : "An unknown error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setRevertingId(null);
+    }
   };
 
   if (loading) {
@@ -328,9 +331,9 @@ export default function BackupManager({
           google_access_token: googleConnected,
           backup_sheet_id: selectedSheetId,
         }}
-        onConnectionUpdate={(connected, sheetId) => {
-          setGoogleConnected(connected);
-          if (sheetId) setSelectedSheetId(sheetId);
+        onConnectionUpdate={(c, s) => {
+          setGoogleConnected(c);
+          if (s) setSelectedSheetId(s);
         }}
       />
       <Card>
@@ -340,21 +343,11 @@ export default function BackupManager({
             Manual Backup
           </CardTitle>
           <CardDescription>
-            Create an immediate backup of your HubSpot pages to Google Sheets
-            and save a snapshot for version comparison.
+            Create an initial backup of your HubSpot pages. This creates a new
+            version in your history.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {currentBackup && currentBackup.status === "running" && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">
-                  Backup in progress...
-                </span>
-              </div>
-              <Progress value={50} className="w-full animate-pulse" />
-            </div>
-          )}
+        <CardContent>
           <Button
             onClick={startBackup}
             disabled={
@@ -374,31 +367,12 @@ export default function BackupManager({
             ) : (
               <>
                 <Download className="mr-2 h-4 w-4" />
-                Start Backup
+                Create New Backup
               </>
             )}
           </Button>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              {hubspotToken ? (
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-red-600" />
-              )}
-              <span>HubSpot Connected</span>
-            </div>
-            <div className="flex items-center gap-2">
-              {googleConnected && selectedSheetId ? (
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-red-600" />
-              )}
-              <span>Google Sheet Selected</span>
-            </div>
-          </div>
         </CardContent>
       </Card>
-
       {selectedSheetId && (
         <Card>
           <CardHeader>
@@ -407,26 +381,18 @@ export default function BackupManager({
               Sync Changes to HubSpot
             </CardTitle>
             <CardDescription>
-              After editing in Google Sheets, preview the changes here before
-              syncing them back to HubSpot.
+              After editing in Google Sheets, preview changes and then sync them
+              to HubSpot. This creates a new version.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <Button
               onClick={previewChanges}
-              disabled={isPreviewing || isSyncing}
+              disabled={isPreviewing || isSyncing || !!revertingId}
               className="w-full"
             >
-              {isPreviewing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Comparing...
-                </>
-              ) : (
-                "Preview Changes"
-              )}
+              {isPreviewing ? "Comparing..." : "Preview Changes from Sheet"}
             </Button>
-
             {!isPreviewing && changes.length > 0 && (
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2">
@@ -443,11 +409,9 @@ export default function BackupManager({
                         (ID: {change.pageId})
                       </span>
                     </h4>
-
                     {Object.entries(change.fields).map(
                       ([fieldKey, value]: [string, any]) => {
                         if (fieldKey === "body_content") return null;
-
                         return (
                           <div key={fieldKey}>
                             <div className="flex items-center gap-2 mb-1">
@@ -464,7 +428,6 @@ export default function BackupManager({
                                 </Badge>
                               )}
                             </div>
-
                             {fieldKey === "body_content_diff" ? (
                               <div
                                 className="diff-container border rounded mt-1 p-3 text-sm leading-relaxed bg-white"
@@ -489,8 +452,6 @@ export default function BackupManager({
                     )}
                   </div>
                 ))}
-
-                {/* --- REPLACED BUTTON WITH ALERTDIALOG --- */}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
@@ -517,8 +478,8 @@ export default function BackupManager({
                       </AlertDialogTitle>
                       <AlertDialogDescription>
                         This will sync {changes.length} change(s) directly to
-                        HubSpot. This action cannot be undone and will overwrite
-                        the live content.
+                        HubSpot and create a new version. This action is
+                        irreversible.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -527,98 +488,121 @@ export default function BackupManager({
                         onClick={syncChangesToHubspot}
                         className="bg-green-600 hover:bg-green-700"
                       >
-                        Yes, Sync Changes
+                        Yes, Sync
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
               </div>
             )}
-
             {!isPreviewing && changes.length === 0 && (
               <p className="text-sm text-center text-gray-500 pt-4">
-                Click "Preview Changes" to check for modifications in your
-                Google Sheet.
+                Click "Preview Changes" to check for modifications.
               </p>
             )}
           </CardContent>
         </Card>
       )}
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Backup History
+            <History className="h-5 w-5" />
+            Version History
           </CardTitle>
           <CardDescription>
-            Recent backup sessions and their status
+            A log of all backups and syncs. You can revert your live site to a
+            previous version.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {backupSessions.length > 0 ? (
-            <div className="space-y-4">
-              {backupSessions.map((session) => (
-                <div
-                  key={session.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    {getStatusIcon(session.status)}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={getStatusVariant(session.status)}>
-                          {session.status.charAt(0).toUpperCase() +
-                            session.status.slice(1)}
-                        </Badge>
-                        <span className="text-sm font-medium">
-                          {session.pages_backed_up}/{session.total_pages} pages
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        Started: {new Date(session.started_at).toLocaleString()}
-                        {session.completed_at && (
-                          <span className="ml-2">
-                            • Duration:{" "}
-                            {formatDuration(
-                              session.started_at,
-                              session.completed_at
-                            )}
-                          </span>
-                        )}
-                      </div>
-                      {session.error_message && (
-                        <div className="text-xs text-red-600 mt-1">
-                          Error: {session.error_message}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {session.status === "completed" && selectedSheetId && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a
-                        href={`https://docs.google.com/spreadsheets/d/${selectedSheetId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <FileSpreadsheet className="h-3 w-3 mr-1" />
-                        View Sheet
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
+          {isLoadingVersions ? (
+            <p className="text-center text-gray-500 py-4">Loading history...</p>
           ) : (
-            <div className="text-center py-8">
-              <Database className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No Backups Yet
-              </h3>
-              <p className="text-gray-600">
-                Create your first backup to see the history here
-              </p>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[150px]">Version ID</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {versions.map((version, index) => (
+                  <TableRow key={version.version_id}>
+                    <TableCell className="font-mono text-xs">
+                      {version.version_id.split("_")[0]}_
+                      {version.version_id.split("_")[1]}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          version.type === "Backup"
+                            ? "secondary"
+                            : version.type === "Sync"
+                            ? "default"
+                            : "destructive"
+                        }
+                      >
+                        {version.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(version.created_at).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={!!revertingId}
+                          >
+                            {revertingId === version.version_id ? (
+                              <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                            ) : (
+                              <RefreshCcw className="h-3 w-3 mr-2" />
+                            )}
+                            Revert
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Revert to this version?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will revert all pages to their state from{" "}
+                              <span className="font-semibold">
+                                {new Date(version.created_at).toLocaleString()}
+                              </span>
+                              . Any changes made since then will be lost. This
+                              creates a new 'Revert' version and cannot be
+                              undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleRevert(version.version_id)}
+                              className="bg-destructive hover:bg-destructive/90"
+                            >
+                              Yes, Revert to this Version
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+          {!isLoadingVersions && versions.length === 0 && (
+            <p className="text-center text-gray-500 py-4">
+              No version history found. Create a backup or sync a change to
+              start.
+            </p>
           )}
         </CardContent>
       </Card>

@@ -24,16 +24,12 @@ import {
   Search,
   Download,
   RefreshCw,
-  Calendar,
   Activity,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-
-const goToPrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
-const goToNextPage = () =>
-  setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
 interface AuditLogsProps {
   user: SupabaseUser;
@@ -55,9 +51,12 @@ export default function AuditLogs({ user }: AuditLogsProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [actionFilter, setActionFilter] = useState("all");
   const [resourceFilter, setResourceFilter] = useState("all");
-  const { toast } = useToast();
+  const [currentPage, setCurrentPage] = useState(1);
+  const logsPerPage = 10;
 
+  const totalPages = Math.ceil(filteredLogs.length / logsPerPage);
   const supabase = createClient();
+  const { toast } = useToast();
 
   useEffect(() => {
     loadAuditLogs();
@@ -65,6 +64,7 @@ export default function AuditLogs({ user }: AuditLogsProps) {
 
   useEffect(() => {
     filterLogs();
+    setCurrentPage(1);
   }, [logs, searchTerm, actionFilter, resourceFilter]);
 
   const loadAuditLogs = async () => {
@@ -93,7 +93,6 @@ export default function AuditLogs({ user }: AuditLogsProps) {
   const filterLogs = () => {
     let filtered = logs;
 
-    // Search filter
     if (searchTerm) {
       filtered = filtered.filter(
         (log) =>
@@ -104,12 +103,10 @@ export default function AuditLogs({ user }: AuditLogsProps) {
       );
     }
 
-    // Action filter
     if (actionFilter !== "all") {
       filtered = filtered.filter((log) => log.action_type === actionFilter);
     }
 
-    // Resource filter
     if (resourceFilter !== "all") {
       filtered = filtered.filter((log) => log.resource_type === resourceFilter);
     }
@@ -161,18 +158,6 @@ export default function AuditLogs({ user }: AuditLogsProps) {
         return "secondary";
     }
   };
-  useEffect(() => {
-    filterLogs();
-    setCurrentPage(1); // reset pagination on filter
-  }, [logs, searchTerm, actionFilter, resourceFilter]);
-  const logsPerPage = 10;
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(filteredLogs.length / logsPerPage);
-
-  const paginatedLogs = filteredLogs.slice(
-    (currentPage - 1) * logsPerPage,
-    currentPage * logsPerPage
-  );
 
   const getActionIcon = (action: string) => {
     switch (action) {
@@ -184,6 +169,18 @@ export default function AuditLogs({ user }: AuditLogsProps) {
         return <FileText className="h-3 w-3" />;
     }
   };
+
+  const goToPrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const goToNextPage = () =>
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+
+  const paginatedLogs = filteredLogs.slice(
+    (currentPage - 1) * logsPerPage,
+    currentPage * logsPerPage
+  );
+
+  const uniqueActions = [...new Set(logs.map((log) => log.action_type))];
+  const uniqueResources = [...new Set(logs.map((log) => log.resource_type))];
 
   if (loading) {
     return (
@@ -199,12 +196,9 @@ export default function AuditLogs({ user }: AuditLogsProps) {
     );
   }
 
-  const uniqueActions = [...new Set(logs.map((log) => log.action_type))];
-  const uniqueResources = [...new Set(logs.map((log) => log.resource_type))];
-
   return (
     <div className="space-y-6">
-      {/* Filters and Controls */}
+      {/* Filters */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -275,90 +269,92 @@ export default function AuditLogs({ user }: AuditLogsProps) {
         </CardContent>
       </Card>
 
-      {/* Logs List */}
+      {/* Logs Table */}
       {filteredLogs.length > 0 ? (
-        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-          <table className="min-w-full text-sm text-left">
-            <thead className="bg-gray-100 border-b">
-              <tr>
-                <th className="px-4 py-3 font-semibold text-gray-600">
-                  Timestamp
-                </th>
-                <th className="px-4 py-3 font-semibold text-gray-600">
-                  Action
-                </th>
-                <th className="px-4 py-3 font-semibold text-gray-600">
-                  Resource
-                </th>
-                <th className="px-4 py-3 font-semibold text-gray-600">
-                  Resource ID
-                </th>
-                <th className="px-4 py-3 font-semibold text-gray-600">
-                  Details
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedLogs.map((log) => (
-                <tr key={log.id} className="border-t">
-                  <td className="px-4 py-3 text-gray-700">
-                    {new Date(log.created_at).toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge
-                      variant={getActionBadgeVariant(log.action_type)}
-                      className="flex items-center gap-1"
-                    >
-                      {getActionIcon(log.action_type)}
-                      {log.action_type}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 capitalize">
-                    {log.resource_type.replace("_", " ")}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-600">
-                    {log.resource_id || "-"}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-600">
-                    {log.details && typeof log.details === "object"
-                      ? Object.entries(log.details)
-                          .map(
-                            ([k, v]) =>
-                              `${k}: ${
-                                typeof v === "string" ? v : JSON.stringify(v)
-                              }`
-                          )
-                          .join(", ")
-                      : "-"}
-                  </td>
+        <div className="space-y-4">
+          <div className="overflow-auto border rounded-lg">
+            <table className="min-w-full text-sm text-left">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-4 py-2 font-medium text-gray-700">
+                    Timestamp
+                  </th>
+                  <th className="px-4 py-2 font-medium text-gray-700">
+                    Action
+                  </th>
+                  <th className="px-4 py-2 font-medium text-gray-700">
+                    Resource
+                  </th>
+                  <th className="px-4 py-2 font-medium text-gray-700">
+                    Resource ID
+                  </th>
+                  <th className="px-4 py-2 font-medium text-gray-700">
+                    Details
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y">
+                {paginatedLogs.map((log) => (
+                  <tr key={log.id}>
+                    <td className="px-4 py-2 text-gray-700">
+                      {new Date(log.created_at).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-2">
+                      <Badge
+                        variant={getActionBadgeVariant(log.action_type)}
+                        className="flex items-center gap-1"
+                      >
+                        {getActionIcon(log.action_type)}
+                        {log.action_type}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-2 capitalize">
+                      {log.resource_type.replace("_", " ")}
+                    </td>
+                    <td className="px-4 py-2 font-mono text-xs text-gray-600">
+                      {log.resource_id || "-"}
+                    </td>
+                    <td className="px-4 py-2 text-xs text-gray-600">
+                      {log.details && typeof log.details === "object"
+                        ? Object.entries(log.details)
+                            .map(
+                              ([k, v]) =>
+                                `${k}: ${
+                                  typeof v === "string" ? v : JSON.stringify(v)
+                                }`
+                            )
+                            .join(", ")
+                        : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-          {/* Pagination Controls */}
-          <div className="flex items-center justify-between p-4 border-t bg-gray-50">
-            <div className="text-sm text-gray-600">
+          {/* Pagination */}
+          <div className="flex justify-end items-center gap-2 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToPrevPage}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+            <span className="text-sm text-gray-600">
               Page {currentPage} of {totalPages}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={goToPrevPage}
-                disabled={currentPage === 1}
-                variant="outline"
-                size="sm"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <Button
-                onClick={goToNextPage}
-                disabled={currentPage === totalPages}
-                variant="outline"
-                size="sm"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
           </div>
         </div>
       ) : (
