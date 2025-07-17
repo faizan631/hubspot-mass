@@ -14,7 +14,7 @@ export default async function page({ searchParams }: PageProps) {
   } = await supabase.auth.getUser();
 
   if (user) {
-    redirect("/dashboard");
+    redirect("/dashboards");
   }
 
   const error = searchParams.error;
