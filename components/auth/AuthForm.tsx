@@ -1,38 +1,53 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useToast } from "@/hooks/use-toast"
-import { Mail, Lock, User, ArrowRight, Loader2, Zap, CheckCircle, AlertTriangle } from "lucide-react"
+import type React from "react";
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Mail,
+  Lock,
+  User,
+  ArrowRight,
+  Loader2,
+  Zap,
+  CheckCircle,
+  AlertTriangle,
+} from "lucide-react";
 
 export default function AuthForm() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [name, setName] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [magicLinkSent, setMagicLinkSent] = useState(false)
-  const { toast } = useToast()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const { toast } = useToast();
 
-  const supabase = createClient()
+  const supabase = createClient();
 
   const handleMagicLink = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
     try {
       // Clear any existing session first to avoid PKCE conflicts
-      await supabase.auth.signOut()
+      await supabase.auth.signOut();
 
       // Use the callback URL that matches your page structure
-      const redirectTo = `${window.location.origin}/auth/callback`
+      const redirectTo = `${window.location.origin}/auth/callback`;
 
-      console.log("Sending magic link with redirect:", redirectTo)
+      console.log("Sending magic link with redirect:", redirectTo);
 
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -40,32 +55,35 @@ export default function AuthForm() {
           emailRedirectTo: redirectTo,
           data: name ? { full_name: name } : undefined,
         },
-      })
+      });
 
       if (error) {
-        console.error("Magic link error:", error)
-        throw error
+        console.error("Magic link error:", error);
+        throw error;
       }
 
-      setMagicLinkSent(true)
+      setMagicLinkSent(true);
       toast({
         title: "Magic Link Sent! ✨",
         description: `Check your email at ${email} for a secure login link`,
-      })
+      });
     } catch (error) {
-      console.error("Magic link error:", error)
+      console.error("Magic link error:", error);
       toast({
         title: "Failed to Send Magic Link",
-        description: error instanceof Error ? error.message : "Please check your email and try again",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Please check your email and try again",
         variant: "destructive",
-      })
+      });
     }
-    setLoading(false)
-  }
+    setLoading(false);
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -77,79 +95,86 @@ export default function AuthForm() {
             full_name: name,
           },
         },
-      })
+      });
 
       if (error) {
-        console.error("Sign up error:", error)
-        throw error
+        console.error("Sign up error:", error);
+        throw error;
       }
 
-      console.log("Sign up result:", { user: data.user, session: data.session })
+      console.log("Sign up result:", {
+        user: data.user,
+        session: data.session,
+      });
 
       if (data.user && !data.user.email_confirmed_at) {
         toast({
           title: "Check your email! 📧",
           description: `We sent a confirmation link to ${email}. Click it to activate your account.`,
-        })
+        });
       } else if (data.user && data.session) {
         toast({
           title: "Welcome to Smuves! 🎉",
           description: "Your account has been created successfully.",
-        })
+        });
         // Redirect to dashboard if immediately signed in
-        window.location.href = "/dashboard"
+        window.location.href = "/dashboard";
       }
     } catch (error) {
-      console.error("Sign up error:", error)
+      console.error("Sign up error:", error);
       toast({
         title: "Sign Up Failed",
-        description: error instanceof Error ? error.message : "An error occurred during sign up",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An error occurred during sign up",
         variant: "destructive",
-      })
+      });
     }
-    setLoading(false)
-  }
+    setLoading(false);
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
-      })
+      });
 
       if (error) {
-        console.error("Sign in error:", error)
-        throw error
+        console.error("Sign in error:", error);
+        throw error;
       }
 
-      console.log("Sign in successful:", data.user?.email)
+      console.log("Sign in successful:", data.user?.email);
 
       toast({
         title: "Welcome back! 👋",
         description: "You've been signed in successfully.",
-      })
+      });
 
       // Redirect to dashboard
-      window.location.href = "/dashboard"
+      window.location.href = "/dashboard";
     } catch (error) {
-      console.error("Sign in error:", error)
+      console.error("Sign in error:", error);
       toast({
         title: "Sign In Failed",
-        description: error instanceof Error ? error.message : "Invalid email or password",
+        description:
+          error instanceof Error ? error.message : "Invalid email or password",
         variant: "destructive",
-      })
+      });
     }
-    setLoading(false)
-  }
+    setLoading(false);
+  };
 
   const resendMagicLink = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       // Clear session before resending
-      await supabase.auth.signOut()
+      await supabase.auth.signOut();
 
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -157,24 +182,24 @@ export default function AuthForm() {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: name ? { full_name: name } : undefined,
         },
-      })
+      });
 
-      if (error) throw error
+      if (error) throw error;
 
       toast({
         title: "Magic Link Resent! ✨",
         description: "Check your email again for the new login link",
-      })
+      });
     } catch (error) {
-      console.error("Resend error:", error)
+      console.error("Resend error:", error);
       toast({
         title: "Failed to Resend",
         description: "Please try again in a moment",
         variant: "destructive",
-      })
+      });
     }
-    setLoading(false)
-  }
+    setLoading(false);
+  };
 
   if (magicLinkSent) {
     return (
@@ -200,16 +225,25 @@ export default function AuthForm() {
             <Button
               variant="outline"
               onClick={() => {
-                setMagicLinkSent(false)
-                setEmail("")
-                setName("")
+                setMagicLinkSent(false);
+                setEmail("");
+                setName("");
               }}
               className="flex-1"
             >
               Use Different Email
             </Button>
-            <Button variant="outline" onClick={resendMagicLink} disabled={loading} className="flex-1 bg-transparent">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Resend Link"}
+            <Button
+              variant="outline"
+              onClick={resendMagicLink}
+              disabled={loading}
+              className="flex-1 bg-transparent"
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Resend Link"
+              )}
             </Button>
           </div>
 
@@ -217,7 +251,9 @@ export default function AuthForm() {
             <div className="flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-xs text-amber-800 font-medium mb-1">Important:</p>
+                <p className="text-xs text-amber-800 font-medium mb-1">
+                  Important:
+                </p>
                 <ul className="text-xs text-amber-700 space-y-1">
                   <li>• Only click the most recent magic link</li>
                   <li>• Don't reuse old email links (they expire)</li>
@@ -228,14 +264,16 @@ export default function AuthForm() {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold">Get Started Free</CardTitle>
-        <CardDescription>Create your account or sign in to continue</CardDescription>
+        <CardDescription>
+          Create your account or sign in to continue
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="magic" className="w-full">
@@ -258,7 +296,8 @@ export default function AuthForm() {
                 <span className="font-medium text-purple-900">Recommended</span>
               </div>
               <p className="text-sm text-purple-800">
-                No password needed! We'll send you a secure login link via email.
+                No password needed! We'll send you a secure login link via
+                email.
               </p>
             </div>
 
@@ -429,9 +468,26 @@ export default function AuthForm() {
         </Tabs>
 
         <div className="mt-6 text-center text-xs text-gray-500">
-          By creating an account, you agree to our Terms of Service and Privacy Policy
+          By creating an account, you agree to our{" "}
+          <a
+            href="https://www.smuves.com/terms-of-use"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-primary"
+          >
+            Terms of Service
+          </a>{" "}
+          and{" "}
+          <a
+            href="https://www.smuves.com/privacy-policy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-primary"
+          >
+            Privacy Policy
+          </a>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
