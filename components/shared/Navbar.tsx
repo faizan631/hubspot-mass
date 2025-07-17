@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, Search } from "lucide-react";
+import { LogOut } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,6 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-      
       {/* Page Title */}
       <div className="flex-1">
         <h1 className="text-xl font-semibold text-foreground">{pageTitle}</h1>
@@ -38,7 +38,6 @@ export default function Navbar() {
 
       {/* Right-side actions */}
       <div className="flex flex-1 items-center justify-end gap-4">
-        
         {/* Search Bar (visible on medium screens and up) */}
         <div className="relative hidden w-full max-w-sm md:block">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -60,7 +59,10 @@ export default function Navbar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">
               <Avatar className="h-9 w-9">
-                <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
+                <AvatarImage
+                  src="https://github.com/shadcn.png"
+                  alt="@shadcn"
+                />
                 <AvatarFallback>CN</AvatarFallback>
               </Avatar>
             </Button>
@@ -69,14 +71,22 @@ export default function Navbar() {
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <Link href="/dashboard/profile">
-                <DropdownMenuItem>Profile</DropdownMenuItem>
+              <DropdownMenuItem>Profile</DropdownMenuItem>
             </Link>
             <Link href="/dashboard/settings">
-                <DropdownMenuItem>Settings</DropdownMenuItem>
+              <DropdownMenuItem>Settings</DropdownMenuItem>
             </Link>
             <DropdownMenuItem>Support</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Logout</DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={async () => {
+                const supabase = createClient(); // client supabase client
+                await supabase.auth.signOut(); // logs out in browser
+                window.location.href = "/auth"; // redirect to login
+              }}
+            >
+              <LogOut className="w-4 h-4 mr-2" /> Logout
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
