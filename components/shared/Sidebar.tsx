@@ -62,7 +62,7 @@ export default function Sidebar({
     >
       <link.icon
         className={cn(
-          "h-5 w-5 shrink-0 transition-transform group-hover:scale-110",
+          "h-5 ml-2 w-5 shrink-0 transition-transform group-hover:scale-110",
           pathname === link.href && "text-white"
         )}
       />
@@ -79,7 +79,7 @@ export default function Sidebar({
 
   const SidebarContent = () => (
     <>
-      <div className="flex h-16 items-center justify-between border-b border-slate-200 px-4">
+      <div className="flex !pl-5 h-16 items-center justify-between border-b border-slate-200 px-4">
         <Link
           href="/"
           className="flex items-center gap-2 text-indigo-700 font-semibold"
@@ -101,7 +101,7 @@ export default function Sidebar({
           <X size={24} />
         </button>
       </div>
-      <nav className="flex-1 space-y-4 p-4">
+      <nav className="flex-1 space-y-4 py-4 pl-2 mr-3">
         <div>
           <h2
             className={cn(
@@ -166,10 +166,10 @@ export default function Sidebar({
       <aside
         className={cn(
           "hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-10 lg:flex lg:flex-col transition-all duration-300 ease-in-out",
-          isCollapsed ? "lg:w-16" : "lg:w-64"
+          isCollapsed ? "lg:w-[70px]" : "lg:w-64"
         )}
       >
-        <div className="flex h-full flex-col bg-white/60 backdrop-blur-lg border-r border-slate-200 shadow-md rounded-tr-2xl rounded-br-2xl">
+        <div className="flex h-full pl-1 flex-col bg-white/60 backdrop-blur-lg border-r border-slate-200 shadow-md rounded-tr-2xl rounded-br-2xl">
           <SidebarContent />
         </div>
       </aside>

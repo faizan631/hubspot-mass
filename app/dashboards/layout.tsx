@@ -55,7 +55,7 @@ export default function DashboardLayout({
               onToggleSidebar={toggleSidebar}
               onToggleMobileSidebar={toggleMobileSidebar}
             />
-            <div className="p-4 sm:p-6 lg:p-8">{children}</div>
+            <div>{children}</div>
           </main>
         </div>
         <Toaster />
