@@ -13,19 +13,31 @@ import {
   HelpCircle,
   X,
   Store,
+  LayoutDashboard, // <-- New Icon
+  ClipboardEdit, // <-- New Icon
+  BarChart2, // <-- New Icon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Sidebar Link Configs
-const managementLinks = [
-  { name: "Connect", href: "/dashboards/connect", icon: Link2 },
+// --- NEW CORE LINKS ---
+const coreLinks = [
+  { name: "Dashboard", href: "/dashboards", icon: LayoutDashboard },
+  { name: "Bulk Edits", href: "/dashboards/backup", icon: ClipboardEdit },
+  { name: "Reports", href: "/dashboards/reports", icon: BarChart2 },
   { name: "Pages", href: "/dashboards/pages", icon: FileText },
+];
+
+// --- DATA MANAGEMENT LINKS ---
+const dataLinks = [
+  { name: "Connect", href: "/dashboards/connect", icon: Link2 },
   { name: "Store", href: "/dashboards/backup", icon: Store },
   { name: "Rollback", href: "/dashboards/rollback", icon: RotateCcw },
   { name: "Logs", href: "/dashboards/logs", icon: ShieldCheck },
 ];
+
+// --- SUPPORT LINKS ---
 const supportLinks = [
-  { name: "Help", href: "/dashboard/help", icon: HelpCircle },
+  { name: "Help", href: "/dashboards/help", icon: HelpCircle },
 ];
 
 interface SidebarProps {
@@ -53,7 +65,9 @@ export default function Sidebar({
       onClick={onClose}
       className={cn(
         "flex items-center gap-3 rounded-xl px-3 py-2 font-medium transition-all group",
-        pathname === link.href
+        // Use startsWith for parent routes to stay active, except for the main dashboard
+        pathname === link.href ||
+          (link.href !== "/dashboards" && pathname.startsWith(link.href))
           ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-md"
           : "hover:bg-indigo-100 hover:text-indigo-700 text-slate-700",
         isCollapsed && "justify-center"
@@ -63,7 +77,9 @@ export default function Sidebar({
       <link.icon
         className={cn(
           "h-5 ml-2 w-5 shrink-0 transition-transform group-hover:scale-110",
-          pathname === link.href && "text-white"
+          (pathname === link.href ||
+            (link.href !== "/dashboards" && pathname.startsWith(link.href))) &&
+            "text-white"
         )}
       />
       <span
@@ -101,7 +117,8 @@ export default function Sidebar({
           <X size={24} />
         </button>
       </div>
-      <nav className="flex-1 space-y-4 py-4 pl-2 mr-3">
+      <nav className="flex-1 space-y-6 py-4 pl-2 mr-3">
+        {/* Render Core Links */}
         <div>
           <h2
             className={cn(
@@ -109,14 +126,33 @@ export default function Sidebar({
               isCollapsed && "text-center"
             )}
           >
-            {isCollapsed ? "M" : "Manage"}
+            {isCollapsed ? "C" : "Core"}
           </h2>
           <div className="space-y-1">
-            {managementLinks.map((link) => (
+            {coreLinks.map((link) => (
               <NavLink key={link.href} link={link} />
             ))}
           </div>
         </div>
+
+        {/* Render Data Links */}
+        <div>
+          <h2
+            className={cn(
+              "mb-2 px-2 text-xs font-bold uppercase tracking-wider text-slate-500",
+              isCollapsed && "text-center"
+            )}
+          >
+            {isCollapsed ? "D" : "Data"}
+          </h2>
+          <div className="space-y-1">
+            {dataLinks.map((link) => (
+              <NavLink key={link.href} link={link} />
+            ))}
+          </div>
+        </div>
+
+        {/* Render Support Links */}
         <div>
           <h2
             className={cn(
