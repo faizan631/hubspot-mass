@@ -36,50 +36,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">S</span>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Smuves Dashboard
-                </h1>
-                <p className="text-sm text-gray-500">
-                  HubSpot Backup & Sync Platform
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <Badge
-                variant={userSettings?.is_premium ? "default" : "secondary"}
-                className="flex items-center gap-1"
-              >
-                {userSettings?.is_premium ? (
-                  <>
-                    <Crown className="h-3 w-3" />
-                    Premium
-                  </>
-                ) : (
-                  "Free Plan"
-                )}
-              </Badge>
-              <div className="text-sm text-gray-600">Welcome, {user.email}</div>
-            </div>
-            <form action={signOutAction}>
-              <button
-                type="submit"
-                className="bg-gradient-to-br from-blue-600 to-purple-600 py-2 px-4 font-bold text-white rounded-full"
-              >
-                Logout
-              </button>
-            </form>
-          </div>
-        </div>
-      </header>
+ 
 
       {/* Status messages */}
       {success === "google_connected" && (
