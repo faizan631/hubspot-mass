@@ -26,7 +26,6 @@ import {
   Tags,
   Database,
   Users,
-  RefreshCcw,
   Plug,
   ArrowRightLeft,
 } from "lucide-react";
@@ -67,12 +66,7 @@ export default function Navbar({
 }: NavbarProps) {
   const pathname = usePathname();
   const pageTitle = getTitleFromPathname(pathname);
-  const { setTheme, theme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true); // Required for theme SSR mismatch
-  }, []);
+  const { setTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
@@ -140,21 +134,21 @@ export default function Navbar({
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
 
-            <Link href="/dashboards/profile">
+            <Link href="/dashboard/profile">
               <DropdownMenuItem>
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
             </Link>
 
-            <Link href="/dashboards/billing">
+            <Link href="/dashboard/billing">
               <DropdownMenuItem>
                 <CreditCard className="mr-2 h-4 w-4" />
                 <span>Upgrade Plan</span>
               </DropdownMenuItem>
             </Link>
 
-            <Link href="/dashboards/referrals">
+            <Link href="/dashboard/referrals">
               <DropdownMenuItem>
                 <Gift className="mr-2 h-4 w-4" />
                 <span>Referrals</span>
@@ -164,17 +158,21 @@ export default function Navbar({
               </DropdownMenuItem>
             </Link>
 
-            {/* Settings Submenu */}
+            {/* Settings Submenu (MODIFIED) */}
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
-                <DropdownMenuItem>
-                  <Plug className="mr-2 h-4 w-4" />
-                  <span>Integrations</span>
-                </DropdownMenuItem>
+                {/* --- 1. INTEGRATIONS IS NOW A LINK --- */}
+                <Link href="/dashboard/connect">
+                  <DropdownMenuItem>
+                    <Plug className="mr-2 h-4 w-4" />
+                    <span>Integrations</span>
+                  </DropdownMenuItem>
+                </Link>
+
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
                     <ListChecks className="mr-2 h-4 w-4" />
@@ -212,16 +210,17 @@ export default function Navbar({
                     </DropdownMenuItem>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
+
+                {/* --- 2. LOGS MOVED HERE --- */}
+                <Link href="/dashboard/logs">
+                  <DropdownMenuItem>
+                    <AlertCircle className="mr-2 h-4 w-4" />
+                    <span>Logs</span>
+                  </DropdownMenuItem>
+                </Link>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
-
-            {/* Alerts */}
-            <Link href="/dashboards/logs">
-              <DropdownMenuItem>
-                <AlertCircle className="mr-2 h-4 w-4" />
-                <span>Logs</span>
-              </DropdownMenuItem>
-            </Link>
+            {/* --- END OF SETTINGS MODIFICATION --- */}
 
             <DropdownMenuSeparator />
 

@@ -1,4 +1,4 @@
-// app/dashboards/page.tsx
+// app/dashboard/page.tsx
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +32,7 @@ export default async function DashboardOverviewPage() {
     <div className="w-full space-y-6">
       {/* Status Cards Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg border">
+        <div className="bg-white p-6 rounded-lg border">
           <h3 className="font-semibold mb-2 text-slate-800">
             HubSpot Connection
           </h3>

@@ -12,32 +12,32 @@ import {
   ShieldCheck,
   HelpCircle,
   X,
-  Store,
-  LayoutDashboard, // <-- New Icon
-  ClipboardEdit, // <-- New Icon
-  BarChart2, // <-- New Icon
+  LayoutDashboard,
+  ClipboardEdit,
+  BarChart2,
+  ListFilter, // <-- 1. IMPORTED NEW ICON
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// --- NEW CORE LINKS ---
+// --- NEW CORE LINKS --- (Paths updated to singular 'dashboard')
 const coreLinks = [
-  { name: "Dashboard", href: "/dashboards", icon: LayoutDashboard },
-  { name: "Bulk Edits", href: "/dashboards/backup", icon: ClipboardEdit },
-  { name: "Reports", href: "/dashboards/reports", icon: BarChart2 },
-  { name: "Pages", href: "/dashboards/pages", icon: FileText },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Bulk Edits", href: "/dashboard/backup", icon: ClipboardEdit },
+  { name: "Reports", href: "/dashboard/reports", icon: BarChart2 },
+  { name: "Pages", href: "/dashboard/pages", icon: FileText },
 ];
 
 // --- DATA MANAGEMENT LINKS ---
 const dataLinks = [
-  { name: "Connect", href: "/dashboards/connect", icon: Link2 },
-  { name: "Store", href: "/dashboards/backup", icon: Store },
-  { name: "Rollback", href: "/dashboards/rollback", icon: RotateCcw },
-  { name: "Logs", href: "/dashboards/logs", icon: ShieldCheck },
+  { name: "Connect", href: "/dashboard/connect", icon: Link2 },
+  { name: "Fields", href: "/dashboard/fields", icon: ListFilter }, // <-- 2. ADDED THE NEW LINK
+  { name: "Rollback", href: "/dashboard/rollback", icon: RotateCcw },
+  { name: "Logs", href: "/dashboard/logs", icon: ShieldCheck },
 ];
 
 // --- SUPPORT LINKS ---
 const supportLinks = [
-  { name: "Help", href: "/dashboards/help", icon: HelpCircle },
+  { name: "Help", href: "/dashboard/help", icon: HelpCircle },
 ];
 
 interface SidebarProps {
@@ -65,9 +65,9 @@ export default function Sidebar({
       onClick={onClose}
       className={cn(
         "flex items-center gap-3 rounded-xl px-3 py-2 font-medium transition-all group",
-        // Use startsWith for parent routes to stay active, except for the main dashboard
+        // Logic for active link highlighting
         pathname === link.href ||
-          (link.href !== "/dashboards" && pathname.startsWith(link.href))
+          (link.href !== "/dashboard" && pathname.startsWith(link.href))
           ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-md"
           : "hover:bg-indigo-100 hover:text-indigo-700 text-slate-700",
         isCollapsed && "justify-center"
@@ -78,7 +78,7 @@ export default function Sidebar({
         className={cn(
           "h-5 ml-2 w-5 shrink-0 transition-transform group-hover:scale-110",
           (pathname === link.href ||
-            (link.href !== "/dashboards" && pathname.startsWith(link.href))) &&
+            (link.href !== "/dashboard" && pathname.startsWith(link.href))) &&
             "text-white"
         )}
       />
