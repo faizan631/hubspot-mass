@@ -1,5 +1,4 @@
 // FILE: BackupManager.tsx (This is the final, complete, and correct version)
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -124,29 +123,31 @@ export default function BackupManager({
     setCurrentPage(1);
   }, [versions, searchTerm, typeFilter]);
 
+  // --- THE ONLY CHANGE IS HERE ---
   const loadVersionHistory = async () => {
-    // setIsLoadingVersions(true);
-    // try {
-    //   const response = await fetch("/api/history/get-versions", {
-    //     method: "POST",
-    //     headers: { "Content-Type": "application/json" },
-    //     body: JSON.stringify({ userId: user.id }),
-    //   });
-    //   const data = await response.json();
-    //   if (data.success) {
-    //     setVersions(data.versions);
-    //   } else {
-    //     throw new Error(data.error);
-    //   }
-    // } catch (error) {
-    //   toast({
-    //     title: "Failed to load version history.",
-    //     variant: "destructive",
-    //   });
-    // } finally {
-    //   setIsLoadingVersions(false);
-    // }
+    setIsLoadingVersions(true);
+    try {
+      const response = await fetch("/api/history/get-versions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setVersions(data.versions);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to load version history.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingVersions(false);
+    }
   };
+  // --- END OF CHANGE ---
 
   const checkGoogleConnection = async () => {
     try {
@@ -425,11 +426,6 @@ export default function BackupManager({
         </CardContent>
       </Card>
 
-      {/* 
-        THIS IS THE KEY SECTION
-        The entire "Sync Changes" card will ONLY render if `selectedSheetId` has a value.
-        To make this appear, you must select a sheet from the dropdown in the `GoogleSheetsConnect` component above.
-      */}
       {selectedSheetId && (
         <Card>
           <CardHeader>

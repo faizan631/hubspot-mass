@@ -179,10 +179,12 @@ export default function Navbar({
                     <span>Fields</span>
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
-                    <DropdownMenuItem>
-                      <FileText className="mr-2 h-4 w-4" />
-                      Pages
-                    </DropdownMenuItem>
+                    <Link href="/dashboard/pages">
+                      <DropdownMenuItem>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Pages
+                      </DropdownMenuItem>
+                    </Link>
                     <DropdownMenuItem>
                       <ArrowRightLeft className="mr-2 h-4 w-4" />
                       Redirects
