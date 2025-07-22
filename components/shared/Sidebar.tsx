@@ -1,4 +1,3 @@
-// components/shared/Sidebar.tsx
 "use client";
 
 import type { User } from "@supabase/supabase-js";
@@ -17,10 +16,7 @@ import {
   ClipboardEdit,
   BarChart2,
   ListFilter,
-  Youtube,
-  Linkedin,
 } from "lucide-react";
-import { FaTiktok } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 
 type SidebarProps = {
@@ -47,14 +43,14 @@ const supportLinks = [
   { name: "Help", href: "/dashboard/help", icon: HelpCircle },
 ];
 
-// --- NavLink component ---
+// --- NavLink component with correct types ---
 const NavLink = ({
   link,
   pathname,
   isCollapsed,
   onClick,
 }: {
-  link: { name: string; href: string; icon: React.ElementType };
+  link: { name: string; href: string; icon: React.ElementType }; // Added type for 'link'
   pathname: string;
   isCollapsed: boolean;
   onClick: () => void;
@@ -91,7 +87,7 @@ const NavLink = ({
   </Link>
 );
 
-// --- SidebarContent component ---
+// --- SidebarContent component with correct types ---
 const SidebarContent = ({
   isCollapsed,
   onClose,
@@ -143,7 +139,6 @@ const SidebarContent = ({
           ))}
         </div>
       </div>
-
       <div>
         {!isCollapsed && (
           <h2 className="mb-2 px-2 text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -162,7 +157,6 @@ const SidebarContent = ({
           ))}
         </div>
       </div>
-
       <div>
         {!isCollapsed && (
           <h2 className="mb-2 px-2 text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -182,44 +176,10 @@ const SidebarContent = ({
         </div>
       </div>
     </nav>
-
-    
-    {!isCollapsed && (
-      <div className="mt-auto border-t border-slate-200 p-4">
-        <div className="flex items-center justify-start gap-4 pl-2">
-          <Link
-            href="https://www.youtube.com/@SmuvesHQ"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="YouTube"
-          >
-            <Youtube className="h-5 w-5 text-muted-foreground transition-colors hover:text-primary" />
-          </Link>
-
-          <Link
-            href="https://www.linkedin.com/company/smuves"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="LinkedIn"
-          >
-            <Linkedin className="h-5 w-5 text-muted-foreground transition-colors hover:text-primary" />
-          </Link>
-
-          <Link
-            href="https://www.tiktok.com/@smuveshq"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="TikTok"
-          >
-            <FaTiktok className="h-5 w-5 text-muted-foreground transition-colors hover:text-primary" />
-          </Link>
-        </div>
-      </div>
-    )}
   </>
 );
 
-// --- Main Sidebar component ---
+// --- Main Sidebar component (no changes) ---
 export default function Sidebar({
   user,
   isCollapsed,
@@ -227,7 +187,6 @@ export default function Sidebar({
   onClose,
 }: SidebarProps) {
   const pathname = usePathname();
-
   return (
     <>
       <AnimatePresence>
@@ -256,7 +215,6 @@ export default function Sidebar({
           </>
         )}
       </AnimatePresence>
-
       <aside
         className={cn(
           "hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-10 lg:flex lg:flex-col transition-all duration-300 ease-in-out",
