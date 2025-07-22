@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { updateUserTheme } from "@/app/actions/userActions"; // 1. IMPORT THE ACTION
+import { useToast } from "@/hooks/use-toast";
 
+// ... (keep all your other imports)
 import {
   Menu,
   LogOut,
@@ -35,7 +37,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,9 +68,24 @@ export default function Navbar({
   const pathname = usePathname();
   const pageTitle = getTitleFromPathname(pathname);
   const { setTheme } = useTheme();
+  const { toast } = useToast();
+
+  const handleThemeChange = async (newTheme: "light" | "dark" | "system") => {
+    setTheme(newTheme); // Update UI immediately
+    try {
+      await updateUserTheme(newTheme); // Save to DB in the background
+    } catch (error) {
+      toast({
+        title: "Error Saving Theme",
+        description: "Your theme preference could not be saved.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
+      {/* ... (keep the rest of your JSX the same until the theme switcher) ... */}
       <Button
         variant="ghost"
         size="icon"
@@ -79,7 +95,6 @@ export default function Navbar({
         <Menu className="h-6 w-6" />
         <span className="sr-only">Toggle mobile menu</span>
       </Button>
-
       <Button
         variant="ghost"
         size="icon"
@@ -89,11 +104,9 @@ export default function Navbar({
         <PanelLeftClose className="h-6 w-6" />
         <span className="sr-only">Toggle sidebar</span>
       </Button>
-
       <div className="flex-1">
         <h1 className="text-xl font-semibold text-foreground">{pageTitle}</h1>
       </div>
-
       <div className="flex items-center justify-end gap-2 md:gap-4">
         <div className="relative hidden w-full max-w-sm md:block">
           <Input
@@ -102,8 +115,6 @@ export default function Navbar({
             className="w-full rounded-lg bg-secondary pl-8"
           />
         </div>
-
-        {/* Language Selector */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">
@@ -116,8 +127,6 @@ export default function Navbar({
             <DropdownMenuItem>Español</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        {/* Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">
@@ -133,21 +142,18 @@ export default function Navbar({
           <DropdownMenuContent align="end" className="w-64">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-
             <Link href="/dashboard/profile">
               <DropdownMenuItem>
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
             </Link>
-
             <Link href="/dashboard/billing">
               <DropdownMenuItem>
                 <CreditCard className="mr-2 h-4 w-4" />
                 <span>Upgrade Plan</span>
               </DropdownMenuItem>
             </Link>
-
             <Link href="/dashboard/referrals">
               <DropdownMenuItem>
                 <Gift className="mr-2 h-4 w-4" />
@@ -157,22 +163,18 @@ export default function Navbar({
                 </Badge>
               </DropdownMenuItem>
             </Link>
-
-            {/* Settings Submenu (MODIFIED) */}
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
-                {/* --- 1. INTEGRATIONS IS NOW A LINK --- */}
                 <Link href="/dashboard/connect">
                   <DropdownMenuItem>
                     <Plug className="mr-2 h-4 w-4" />
                     <span>Integrations</span>
                   </DropdownMenuItem>
                 </Link>
-
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
                     <ListChecks className="mr-2 h-4 w-4" />
@@ -212,8 +214,6 @@ export default function Navbar({
                     </DropdownMenuItem>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
-
-                {/* --- 2. LOGS MOVED HERE --- */}
                 <Link href="/dashboard/logs">
                   <DropdownMenuItem>
                     <AlertCircle className="mr-2 h-4 w-4" />
@@ -222,34 +222,32 @@ export default function Navbar({
                 </Link>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
-            {/* --- END OF SETTINGS MODIFICATION --- */}
-
             <DropdownMenuSeparator />
 
-            {/* Theme Switcher */}
+            {/* --- THIS IS THE MODIFIED PART --- */}
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <Paintbrush className="mr-2 h-4 w-4" />
                 <span>Theme</span>
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
-                <DropdownMenuItem onClick={() => setTheme("light")}>
+                <DropdownMenuItem onClick={() => handleThemeChange("light")}>
                   <Sun className="mr-2 h-4 w-4" />
                   Light
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                <DropdownMenuItem onClick={() => handleThemeChange("dark")}>
                   <Moon className="mr-2 h-4 w-4" />
                   Dark
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("system")}>
+                <DropdownMenuItem onClick={() => handleThemeChange("system")}>
                   <Laptop className="mr-2 h-4 w-4" />
                   System
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
+            {/* --- END OF MODIFICATION --- */}
 
             <DropdownMenuSeparator />
-
             <DropdownMenuItem
               onClick={async () => {
                 const supabase = createClient();
