@@ -12,13 +12,23 @@ import { useToast } from "@/hooks/use-toast"
 import { Mail, Lock, User, ArrowRight, Loader2, Zap, CheckCircle, AlertTriangle } from "lucide-react"
 import GoogleAuthButton from "./GoogleAuthButton"
 
-const Divider = () => (
+export const Divider = () => (
   <div className="flex items-center w-full my-4">
     <div className="flex-grow h-px bg-gray-200 dark:bg-gray-700" />
     <span className="mx-4 px-3 font-medium text-gray-900 bg-white dark:text-white dark:bg-gray-900">
       or
     </span>
     <div className="flex-grow h-px bg-gray-200 dark:bg-gray-700" />
+  </div>
+)
+
+export const VerticalDivider = () => (
+  <div className="flex flex-col items-center justify-center mx-4">
+    <div className="h-full w-px bg-gray-200 dark:bg-gray-700" />
+    <span className="my-2 px-2 font-medium text-gray-900 bg-white dark:text-white dark:bg-gray-900 rotate-90">
+      or
+    </span>
+    <div className="h-full w-px bg-gray-200 dark:bg-gray-700" />
   </div>
 )
 

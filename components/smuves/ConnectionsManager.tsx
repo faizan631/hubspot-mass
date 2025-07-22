@@ -171,7 +171,7 @@ export default function ConnectionsManager({
         user_id: user.id,
         backup_sheet_id: selectedBackupSheet,
         updated_at: new Date().toISOString(),
-      });
+      }, { onConflict: 'user_id' });
 
       if (error) throw error;
 

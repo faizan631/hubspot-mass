@@ -11,7 +11,9 @@ export default async function ConnectPage() {
   const { data: userSettings } = await supabase
     .from("user_settings")
     .select("*")
-    .eq("user_id", user!.id)
+    .eq("user_id", user?.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .single();
 
   return (

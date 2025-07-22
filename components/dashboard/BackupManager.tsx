@@ -125,27 +125,27 @@ export default function BackupManager({
   }, [versions, searchTerm, typeFilter]);
 
   const loadVersionHistory = async () => {
-    setIsLoadingVersions(true);
-    try {
-      const response = await fetch("/api/history/get-versions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        setVersions(data.versions);
-      } else {
-        throw new Error(data.error);
-      }
-    } catch (error) {
-      toast({
-        title: "Failed to load version history.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingVersions(false);
-    }
+    // setIsLoadingVersions(true);
+    // try {
+    //   const response = await fetch("/api/history/get-versions", {
+    //     method: "POST",
+    //     headers: { "Content-Type": "application/json" },
+    //     body: JSON.stringify({ userId: user.id }),
+    //   });
+    //   const data = await response.json();
+    //   if (data.success) {
+    //     setVersions(data.versions);
+    //   } else {
+    //     throw new Error(data.error);
+    //   }
+    // } catch (error) {
+    //   toast({
+    //     title: "Failed to load version history.",
+    //     variant: "destructive",
+    //   });
+    // } finally {
+    //   setIsLoadingVersions(false);
+    // }
   };
 
   const checkGoogleConnection = async () => {

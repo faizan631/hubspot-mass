@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { AlertTriangle, Globe, Database, Zap, Crown, CheckCircle } from "lucide-react"
 import type { User } from "@supabase/supabase-js"
-
+import Image from "next/image"
+import { useSearchParams,useRouter  } from 'next/navigation'
 interface HubSpotConnectProps {
   user: User
   userSettings: any
@@ -18,9 +19,9 @@ interface HubSpotConnectProps {
 }
 
 export default function HubSpotConnect({ user, userSettings, onConnectionUpdate }: HubSpotConnectProps) {
-  const [token, setToken] = useState("")
+  const [token, setToken] = useState(userSettings?.hubspot_access_token || "")
   const [domain, setDomain] = useState(userSettings?.website_domain || "")
-  const [isConnected, setIsConnected] = useState(!!userSettings?.hubspot_token_encrypted)
+  const [isConnected, setIsConnected] = useState(!!userSettings?.hubspot_access_token)
   const [testing, setTesting] = useState(false)
   const [saving, setSaving] = useState(false)
   const [testResults, setTestResults] = useState<any>(null)
@@ -32,10 +33,30 @@ export default function HubSpotConnect({ user, userSettings, onConnectionUpdate 
 
   useEffect(() => {
     // Initialize state from userSettings
-    setIsConnected(!!userSettings?.hubspot_token_encrypted)
+    setIsConnected(!!userSettings?.hubspot_access_token)
     setConnectionType(userSettings?.hubspot_connection_type || null)
     setDomain(userSettings?.website_domain || "")
   }, [userSettings])
+
+  const searchParams = useSearchParams()
+  const oauthResponse = searchParams.get('hubspot_oauth')
+  const router = useRouter()
+
+  useEffect(() => {
+    if (oauthResponse === 'success') {
+      setIsConnected(true)
+      setConnectionType("paid")
+      toast({
+        title: "HubSpot Connected! 🎉",
+        description:  'Your HubSpot account has been connected successfully!',
+      })
+
+      // ✅ Remove the query param from the URL
+      const newParams = new URLSearchParams(searchParams.toString())
+      newParams.delete('hubspot_oauth')
+      router.replace(`?${newParams.toString()}`, { scroll: false })
+    }
+  }, [oauthResponse])
 
   const saveConnection = async (hubspotToken: string, connType: "paid" | "free", websiteDomain?: string) => {
     setSaving(true)
@@ -78,10 +99,11 @@ export default function HubSpotConnect({ user, userSettings, onConnectionUpdate 
   }
 
   const testPaidConnection = async () => {
-    if (!token.trim()) {
+    const finalToken = token.trim() ||  userSettings?.hubspot_access_token
+    if (!finalToken) {
       toast({
         title: "Error",
-        description: "Please enter a HubSpot token",
+        description: "Something went wrong. Please enter a HubSpot token or continue with hubspot",
         variant: "destructive",
       })
       return
@@ -94,7 +116,6 @@ export default function HubSpotConnect({ user, userSettings, onConnectionUpdate 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
       })
-
       const data = await response.json()
       setTestResults(data)
 
@@ -305,8 +326,8 @@ export default function HubSpotConnect({ user, userSettings, onConnectionUpdate 
                   }}
                   className="space-y-4"
                 >
-                  <div className="space-y-2">
-                    <Label htmlFor="hubspot-token-paid">HubSpot Private App Token</Label>
+                  {/* <div className="space-y-2">
+                    <Label htmlFor="hubspot-token-paid">HubSpot Private App Token asdsad</Label>
                     <Input
                       id="hubspot-token-paid"
                       type="password"
@@ -315,7 +336,61 @@ export default function HubSpotConnect({ user, userSettings, onConnectionUpdate 
                       placeholder="pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                     />
                     <p className="text-xs text-gray-500">Requires CMS Pages API access (paid HubSpot plan)</p>
+                  </div> */}
+                  <div className="flex flex-col md:flex-row gap-6">
+                  {/* Left: Token Input */}
+                  <div className="w-full space-y-2">
+                    <Label htmlFor="hubspot-token-free">Paste Your HubSpot Private App Token</Label>
+                    <Input
+                      id="hubspot-token-free"
+                      type="password"
+                      value={token}
+                      onChange={(e) => setToken(e.target.value)}
+                      placeholder="pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                    />
                   </div>
+
+                  {/* Divider */}
+                  {/* Horizontal divider with centered OR on mobile */}
+                  <div className="flex items-center gap-2 md:hidden my-2">
+                    <div className="flex-grow h-px bg-gray-200" />
+                    <span className="text-xs text-muted-foreground">OR</span>
+                    <div className="flex-grow h-px bg-gray-200" />
+                  </div>
+
+                  {/* Vertical divider with centered OR on desktop */}
+                  <div className="hidden md:flex flex-col items-center justify-center px-2">
+                    <div className="h-full w-px bg-gray-200" />
+                    <span className="absolute bg-white px-1 text-xs text-muted-foreground -rotate-90">OR</span>
+                  </div>
+
+                  {/* Right: OAuth Section */}
+                  <div className="w-full space-y-2">
+                    <Label>Sign in with HubSpot</Label>
+                    <button
+                      onClick={() => {
+                        const clientId = process.env.NEXT_PUBLIC_HUBSPOT_CLIENT_ID;
+                        const redirectUri = encodeURIComponent("http://localhost:3000/auth/hubspot/callback");
+                        const scopes = "crm.objects.contacts.read crm.objects.companies.read";
+
+                        const authUrl = `https://app.hubspot.com/oauth/authorize?client_id=${clientId}&scope=${scopes}&redirect_uri=${redirectUri}`;
+                        window.location.href = authUrl;
+                      }}
+                      type="button"
+                      className="w-full inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition"
+                    >
+                      <Image
+                        src="/hubspot.png"
+                        className="h-5 w-5 mr-2"
+                        alt="Hubspot Logo"
+                        width={10}
+                        height={10}
+                      />
+                      Continue with HubSpot
+                    </button>
+                  </div>
+                </div>
+
                   <Button type="submit" disabled={testing || saving} className="w-full">
                     {testing ? "Testing Connection..." : saving ? "Saving..." : "Test & Save CMS Connection"}
                   </Button>
@@ -449,7 +524,7 @@ export default function HubSpotConnect({ user, userSettings, onConnectionUpdate 
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       {Object.entries(testResults.breakdown).map(
                         ([type, count]) =>
-                          count > 0 && (
+                          count as number > 0 && (
                             <div key={type} className="flex justify-between">
                               <span className="capitalize">{type.replace("_", " ")}:</span>
                               <span className="font-medium">{count as number}</span>

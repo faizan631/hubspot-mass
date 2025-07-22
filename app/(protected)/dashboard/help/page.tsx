@@ -27,7 +27,7 @@ export default async function HelpPage() {
   // Mark help as seen
   await supabase
     .from("user_settings")
-    .update({ has_seen_help: true })
+    .upsert({ user_id: user.id, has_seen_help: true }, { onConflict: 'user_id' })
     .eq("user_id", user.id);
 
   return (

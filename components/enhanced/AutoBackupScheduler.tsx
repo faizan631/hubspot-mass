@@ -151,10 +151,11 @@ export default function AutoBackupScheduler({
     try {
       const { error } = await supabase
         .from("user_settings")
-        .update({
+        .upsert({
+          user_id: user.id,
           backup_schedule: scheduleSettings,
           updated_at: new Date().toISOString(),
-        })
+        }, {onConflict: 'user_id'})
         .eq("user_id", user.id);
 
       if (error) throw error;
