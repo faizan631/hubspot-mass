@@ -1,18 +1,16 @@
 // components/theme-provider.tsx
-
 "use client";
 
 import * as React from "react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
-import { type ThemeProviderProps } from "next-themes/dist/types";
+import type { ThemeProviderProps } from "next-themes/dist/types"; // Fixed import path
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="system" // A better default
-      enableSystem={true} // Allow 'system' to work correctly
-      {...props}
+      enableSystem={true}
+      {...props} // <-- This passes defaultTheme from layout
     >
       {children}
     </NextThemesProvider>

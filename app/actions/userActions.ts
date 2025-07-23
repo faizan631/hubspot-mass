@@ -1,9 +1,7 @@
-// app/actions/userActions.ts
-
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { cookies } from "next/headers"; // ✅ 1. IMPORT cookies
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 
 // Define a reusable type for the theme
@@ -15,7 +13,7 @@ export type Theme = "light" | "dark" | "system";
  */
 export async function getUserData() {
   const cookieStore = cookies();
-  const supabase = createClient(cookieStore); // ✅ Pass cookies to the client
+  const supabase = createClient(cookieStore);
 
   const {
     data: { user },
@@ -28,9 +26,9 @@ export async function getUserData() {
 
   // Fetch the user's settings to get the theme
   const { data: settings } = await supabase
-    .from("user_settings") // ⚠️ Make sure "user_settings" is your correct table name
+    .from("user_settings")
     .select("theme")
-    .eq("user_id", user.id) // ⚠️ Make sure "user_id" is your correct column name
+    .eq("user_id", user.id)
     .single();
 
   // If the user has a theme saved, use it. Otherwise, default to 'system'.
@@ -45,7 +43,7 @@ export async function getUserData() {
  */
 export async function updateUserTheme(theme: Theme) {
   const cookieStore = cookies();
-  const supabase = createClient(cookieStore); // ✅ Pass cookies to the client
+  const supabase = createClient(cookieStore);
 
   const {
     data: { user },
@@ -55,25 +53,29 @@ export async function updateUserTheme(theme: Theme) {
     throw new Error("User not authenticated");
   }
 
-  // ✅ 2. Use .upsert() for efficiency
-  // This will UPDATE the row if one with the user_id exists, or INSERT it if not.
-  const { error } = await supabase
-    .from("user_settings") // ⚠️ Your table name
-    .upsert(
-      {
-        user_id: user.id, // ⚠️ Your foreign key column to auth.users
-        theme: theme,
-        updated_at: new Date().toISOString(), // Good practice to update a timestamp
-      },
-      { onConflict: "user_id" } // Tells Supabase to check for conflicts on the 'user_id' column
-    );
+  // ✅ Use .upsert() for efficiency
+  const { error } = await supabase.from("user_settings").upsert(
+    {
+      user_id: user.id,
+      theme: theme,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" }
+  );
 
   if (error) {
     console.error("Error upserting user theme:", error);
     throw new Error("Failed to save theme preference.");
   }
 
-  // Revalidate the layout to ensure the new theme is fetched on the next page load
+  // Set theme cookie for immediate access
+  cookieStore.set("theme", theme, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365, // 1 year
+    sameSite: "lax",
+  });
+
+  // Revalidate the layout to ensure the new theme is fetched
   revalidatePath("/dashboard", "layout");
 
   return { success: true };

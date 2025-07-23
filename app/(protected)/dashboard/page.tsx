@@ -3,8 +3,6 @@ import { redirect } from "next/navigation";
 import DashboardTabs from "@/components/dashboard/DashboardTabs";
 import { Badge } from "@/components/ui/badge";
 import { Crown, AlertCircle, CheckCircle } from "lucide-react";
-import { signOutAction } from "@/app/auth/signout/actions";
-
 
 interface PageProps {
   searchParams: { [key: string]: string | string[] | undefined };
@@ -37,8 +35,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
- 
-
       {/* Status messages */}
       {success === "google_connected" && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">

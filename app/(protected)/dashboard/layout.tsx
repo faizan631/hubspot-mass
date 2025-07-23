@@ -1,5 +1,3 @@
-//app/dashboard/layout:
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -8,7 +6,7 @@ import { Inter } from "next/font/google";
 import Sidebar from "@/components/shared/Sidebar";
 import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
-import CustomProgressBar from "@/components/shared/ProgressBar"; 
+import CustomProgressBar from "@/components/shared/ProgressBar";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -22,11 +20,9 @@ export default function DashboardLayout({
   const [user, setUser] = useState<User | null>(null);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isClient, setIsClient] = useState(false);
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  // Direct client check
+  const isClient = typeof window !== "undefined";
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -66,7 +62,6 @@ export default function DashboardLayout({
           isSidebarCollapsed ? "lg:ml-[70px]" : "lg:ml-64"
         )}
       >
-        {/* ✅ Add the progress bar just inside this wrapper */}
         <CustomProgressBar />
 
         <Navbar
