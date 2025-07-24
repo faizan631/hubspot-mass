@@ -1,246 +1,234 @@
 // FILE: /api/sync/preview-changes/route.ts
 
-import { createClient } from "@/lib/supabase/server";
-import { type NextRequest, NextResponse } from "next/server";
-import { google } from "googleapis";
-import { diff_match_patch } from "diff-match-patch";
+import { createClient } from '@/lib/supabase/server'
+import { type NextRequest, NextResponse } from 'next/server'
+import { google } from 'googleapis'
+import { diff_match_patch } from 'diff-match-patch'
 
 // ... (getRefreshedGoogleClient and getColumnIndex functions are unchanged) ...
 async function getRefreshedGoogleClient(userId: string, supabase: any) {
   const { data: userSettings, error } = await supabase
-    .from("user_settings")
-    .select("google_access_token, google_refresh_token")
-    .eq("user_id", userId)
-    .single();
+    .from('user_settings')
+    .select('google_access_token, google_refresh_token')
+    .eq('user_id', userId)
+    .single()
 
   if (error || !userSettings?.google_refresh_token) {
     throw new Error(
-      "Google connection not found or refresh token is missing. Please reconnect your Google account."
-    );
+      'Google connection not found or refresh token is missing. Please reconnect your Google account.'
+    )
   }
 
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
     process.env.GOOGLE_REDIRECT_URI
-  );
+  )
 
   oauth2Client.setCredentials({
     refresh_token: userSettings.google_refresh_token,
-  });
+  })
 
-  const { token: newAccessToken } = await oauth2Client.getAccessToken();
+  const { token: newAccessToken } = await oauth2Client.getAccessToken()
 
   if (newAccessToken && newAccessToken !== userSettings.google_access_token) {
     await supabase
-      .from("user_settings")
+      .from('user_settings')
       .update({ google_access_token: newAccessToken })
-      .eq("user_id", userId);
+      .eq('user_id', userId)
   }
 
   oauth2Client.setCredentials({
     access_token: newAccessToken,
     refresh_token: userSettings.google_refresh_token,
-  });
+  })
 
-  return google.sheets({ version: "v4", auth: oauth2Client });
+  return google.sheets({ version: 'v4', auth: oauth2Client })
 }
 function getColumnIndex(headers: string[], name: string): number {
-  return headers.findIndex(
-    (h) => h.toLowerCase().trim() === name.toLowerCase().trim()
-  );
+  return headers.findIndex(h => h.toLowerCase().trim() === name.toLowerCase().trim())
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, sheetId, sheetName } = await request.json();
+    const { userId, sheetId, sheetName } = await request.json()
 
     if (!userId || !sheetId || !sheetName) {
       return NextResponse.json(
-        { success: false, error: "Missing required fields." },
+        { success: false, error: 'Missing required fields.' },
         { status: 400 }
-      );
+      )
     }
 
-    const supabase = createClient();
+    const supabase = createClient()
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getUser()
 
     if (authError || !user || user.id !== userId) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    const sheets = await getRefreshedGoogleClient(user.id, supabase);
+    const sheets = await getRefreshedGoogleClient(user.id, supabase)
 
     const sheetResponse = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
       range: `'${sheetName}'`,
-    });
+    })
 
-    const sheetRows = sheetResponse.data.values;
+    const sheetRows = sheetResponse.data.values
     if (!sheetRows || sheetRows.length <= 1) {
       return NextResponse.json({
         success: true,
         changes: [],
-        message: "No data in sheet to compare.",
-      });
+        message: 'No data in sheet to compare.',
+      })
     }
 
-    const headers = sheetRows.shift()!.map((h) => String(h));
+    const headers = sheetRows.shift()!.map(h => String(h))
 
     const columnsToCompare = {
-      ID: "hubspot_page_id",
-      Name: "name",
-      URL: "url",
-      "HTML Title": "html_title",
-      "Meta Description": "meta_description",
-      Slug: "slug",
-      "Body Content": "body_content",
-    };
+      ID: 'hubspot_page_id',
+      Name: 'name',
+      URL: 'url',
+      'HTML Title': 'html_title',
+      'Meta Description': 'meta_description',
+      Slug: 'slug',
+      'Body Content': 'body_content',
+    }
 
-    const columnIndexes: { [key: string]: number } = {};
+    const columnIndexes: { [key: string]: number } = {}
     for (const header in columnsToCompare) {
-      const propName =
-        columnsToCompare[header as keyof typeof columnsToCompare];
-      columnIndexes[propName] = getColumnIndex(headers, header);
+      const propName = columnsToCompare[header as keyof typeof columnsToCompare]
+      columnIndexes[propName] = getColumnIndex(headers, header)
     }
 
     if (columnIndexes.hubspot_page_id === -1) {
-      throw new Error("Could not find required column 'ID' in the sheet.");
+      throw new Error("Could not find required column 'ID' in the sheet.")
     }
 
-    const latestSheetDataMap = new Map();
+    const latestSheetDataMap = new Map()
     for (let i = 0; i < sheetRows.length; i++) {
-      const row = sheetRows[i];
-      const pageId = row[columnIndexes.hubspot_page_id];
-      if (!pageId) continue;
-      const sheetRowNumber = i + 2;
+      const row = sheetRows[i]
+      const pageId = row[columnIndexes.hubspot_page_id]
+      if (!pageId) continue
+      const sheetRowNumber = i + 2
 
-      const pageData: { [key: string]: any } = {};
+      const pageData: { [key: string]: any } = {}
       for (const propName in columnIndexes) {
-        const index = columnIndexes[propName];
+        const index = columnIndexes[propName]
         if (index !== -1) {
-          pageData[propName] = row[index] || "";
+          pageData[propName] = row[index] || ''
         }
       }
       latestSheetDataMap.set(pageId, {
         values: pageData,
         originalRow: sheetRowNumber,
-      });
+      })
     }
 
     const { data: latestBackupRun, error: backupIdError } = await supabase
-      .from("hubspot_page_backups")
-      .select("backup_id")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
+      .from('hubspot_page_backups')
+      .select('backup_id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .single()
 
     if (backupIdError || !latestBackupRun) {
       return NextResponse.json({
         success: true,
         changes: [],
-        message: "No database backup found to compare against.",
-      });
+        message: 'No database backup found to compare against.',
+      })
     }
 
     const { data: dbBackupData, error: dbError } = await supabase
-      .from("hubspot_page_backups")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("backup_id", latestBackupRun.backup_id);
+      .from('hubspot_page_backups')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('backup_id', latestBackupRun.backup_id)
 
-    if (dbError) throw dbError;
+    if (dbError) throw dbError
 
-    const supabaseDataMap = new Map(
-      dbBackupData.map((row) => [row.hubspot_page_id, row])
-    );
+    const supabaseDataMap = new Map(dbBackupData.map(row => [row.hubspot_page_id, row]))
 
-    const changes: any[] = [];
-    const dmp = new diff_match_patch();
+    const changes: any[] = []
+    const dmp = new diff_match_patch()
 
     for (const [pageId, sheetEntry] of latestSheetDataMap.entries()) {
-      const dbPage = supabaseDataMap.get(pageId);
-      if (!dbPage) continue;
+      const dbPage = supabaseDataMap.get(pageId)
+      if (!dbPage) continue
 
-      const sheetPage = sheetEntry.values;
-      const sheetRowNumber = sheetEntry.originalRow;
+      const sheetPage = sheetEntry.values
+      const sheetRowNumber = sheetEntry.originalRow
 
-      const modifiedFields: any = {};
-      let isModified = false;
+      const modifiedFields: any = {}
+      let isModified = false
 
       for (const propName in sheetPage) {
         // *** START MODIFICATION ***
         // Exclude body_content from this generic loop; handle it separately.
-        if (propName === "hubspot_page_id" || propName === "body_content") {
-          continue;
+        if (propName === 'hubspot_page_id' || propName === 'body_content') {
+          continue
         }
         // *** END MODIFICATION ***
 
         if (sheetPage[propName] !== dbPage[propName]) {
-          isModified = true;
+          isModified = true
           modifiedFields[propName] = {
-            old: dbPage[propName] || "",
+            old: dbPage[propName] || '',
             new: sheetPage[propName],
             location: {
               row: sheetRowNumber,
               column: columnIndexes[propName] + 1,
             },
-          };
+          }
         }
       }
 
       // Special handling for body_content
       if (
-        sheetPage.hasOwnProperty("body_content") &&
+        sheetPage.hasOwnProperty('body_content') &&
         sheetPage.body_content !== dbPage.body_content
       ) {
-        isModified = true;
-        const diff = dmp.diff_main(
-          dbPage.body_content || "",
-          sheetPage.body_content || ""
-        );
-        dmp.diff_cleanupSemantic(diff);
+        isModified = true
+        const diff = dmp.diff_main(dbPage.body_content || '', sheetPage.body_content || '')
+        dmp.diff_cleanupSemantic(diff)
 
         // *** CRITICAL CHANGE HERE ***
         // We add BOTH the data for syncing (body_content) AND the visual diff for display.
         modifiedFields.body_content = {
-          old: dbPage.body_content || "",
+          old: dbPage.body_content || '',
           new: sheetPage.body_content,
-        };
+        }
         modifiedFields.body_content_diff = {
           diffHtml: dmp.diff_prettyHtml(diff),
           location: {
             row: sheetRowNumber,
             column: columnIndexes.body_content + 1,
           },
-        };
+        }
       }
 
       if (isModified) {
         changes.push({
           pageId: pageId,
           name: sheetPage.name || dbPage.name,
-          type: "modified",
+          type: 'modified',
           fields: modifiedFields,
-        });
+        })
       }
     }
 
-    return NextResponse.json({ success: true, changes });
+    return NextResponse.json({ success: true, changes })
   } catch (error) {
-    console.error("Preview changes error:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred.";
+    console.error('Preview changes error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.'
     return NextResponse.json(
       { success: false, error: `Failed to preview changes: ${errorMessage}` },
       { status: 500 }
-    );
+    )
   }
 }

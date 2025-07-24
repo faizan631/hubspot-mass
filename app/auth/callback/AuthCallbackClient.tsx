@@ -1,139 +1,124 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function AuthCallbackClient() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        console.log("=== AUTH CALLBACK DEBUG ===");
-        console.log("Full URL:", window.location.href);
-        console.log(
-          "Search params:",
-          Object.fromEntries(searchParams.entries())
-        );
+        console.log('=== AUTH CALLBACK DEBUG ===')
+        console.log('Full URL:', window.location.href)
+        console.log('Search params:', Object.fromEntries(searchParams.entries()))
 
         // Check if we have the required environment variables
-        if (
-          !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-          !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-        ) {
-          throw new Error("Supabase configuration is missing");
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          throw new Error('Supabase configuration is missing')
         }
 
         // Dynamic import to avoid SSR issues
-        const { createBrowserClient } = await import("@supabase/ssr");
+        const { createBrowserClient } = await import('@supabase/ssr')
 
         const supabase = createBrowserClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL,
           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-        );
+        )
 
-        const code = searchParams.get("code");
-        const error_code = searchParams.get("error");
-        const error_description = searchParams.get("error_description");
+        const code = searchParams.get('code')
+        const error_code = searchParams.get('error')
+        const error_description = searchParams.get('error_description')
 
-        console.log("Auth parameters:", {
+        console.log('Auth parameters:', {
           hasCode: !!code,
           codeLength: code?.length,
           errorCode: error_code,
           errorDescription: error_description,
-        });
+        })
 
         // Handle OAuth errors first
         if (error_code) {
-          console.error("OAuth error:", error_code, error_description);
-          throw new Error(error_description || error_code);
+          console.error('OAuth error:', error_code, error_description)
+          throw new Error(error_description || error_code)
         }
 
         if (!code) {
-          console.error("No authorization code found in URL");
-          throw new Error(
-            "No authorization code received. Please try the magic link again."
-          );
+          console.error('No authorization code found in URL')
+          throw new Error('No authorization code received. Please try the magic link again.')
         }
 
-        console.log("Attempting to exchange code for session...");
+        console.log('Attempting to exchange code for session...')
 
         // Clear any existing session first to avoid conflicts
-        await supabase.auth.signOut();
+        await supabase.auth.signOut()
 
         // Exchange the code for a session
-        const { data, error: authError } =
-          await supabase.auth.exchangeCodeForSession(code);
+        const { data, error: authError } = await supabase.auth.exchangeCodeForSession(code)
 
-        console.log("Exchange result:", {
+        console.log('Exchange result:', {
           hasData: !!data,
           hasUser: !!data?.user,
           hasSession: !!data?.session,
           error: authError,
-        });
+        })
 
         if (authError) {
-          console.error("Session exchange error:", authError);
+          console.error('Session exchange error:', authError)
 
           // Handle specific PKCE errors
           if (
-            authError.message?.includes("bad_code_verifier") ||
-            authError.message?.includes("PKCE")
+            authError.message?.includes('bad_code_verifier') ||
+            authError.message?.includes('PKCE')
           ) {
-            throw new Error(
-              "Authentication session expired. Please try signing in again."
-            );
+            throw new Error('Authentication session expired. Please try signing in again.')
           }
 
-          throw new Error(`Authentication failed: ${authError.message}`);
+          throw new Error(`Authentication failed: ${authError.message}`)
         }
 
         if (data?.user && data?.session) {
-          console.log("Authentication successful for:", data.user.email);
+          console.log('Authentication successful for:', data.user.email)
 
           // Verify the session is properly set
-          const { data: sessionData } = await supabase.auth.getSession();
-          console.log("Session verification:", !!sessionData.session);
+          const { data: sessionData } = await supabase.auth.getSession()
+          console.log('Session verification:', !!sessionData.session)
 
-          const next = searchParams.get("next") ?? "/dashboard";
-          console.log("Redirecting to:", next);
+          const next = searchParams.get('next') ?? '/dashboard'
+          console.log('Redirecting to:', next)
 
           // Use window.location.href for a hard redirect to ensure session is properly loaded
-          window.location.href = next;
+          window.location.href = next
         } else {
-          throw new Error("No user data received after authentication");
+          throw new Error('No user data received after authentication')
         }
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Authentication failed";
-        console.error("=== CALLBACK ERROR ===");
-        console.error("Error:", errorMessage);
-        console.error(
-          "Stack:",
-          err instanceof Error ? err.stack : "No stack trace"
-        );
+        const errorMessage = err instanceof Error ? err.message : 'Authentication failed'
+        console.error('=== CALLBACK ERROR ===')
+        console.error('Error:', errorMessage)
+        console.error('Stack:', err instanceof Error ? err.stack : 'No stack trace')
 
-        setError(errorMessage);
+        setError(errorMessage)
 
         // Redirect to home page with error after a delay
         setTimeout(() => {
-          router.replace(`/?error=${encodeURIComponent(errorMessage)}`);
-        }, 3000);
+          router.replace(`/?error=${encodeURIComponent(errorMessage)}`)
+        }, 3000)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    handleCallback();
-  }, [searchParams, router]);
+    handleCallback()
+  }, [searchParams, router])
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="max-w-md w-full bg-white p-6 rounded-lg shadow-md">
+      <div className="min-h-screen flex items-center justify-center bg-popover p-4">
+        <div className="max-w-md w-full bg-background p-6 rounded-lg shadow-md">
           <div className="text-center">
             <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
               <svg
@@ -150,30 +135,26 @@ export default function AuthCallbackClient() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Authentication Error
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">{error}</p>
-            <p className="text-xs text-gray-500">
-              Redirecting you back to the login page...
-            </p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Authentication Error</h3>
+            <p className="text-sm text-muted-foreground mb-4">{error}</p>
+            <p className="text-xs text-gray-500">Redirecting you back to the login page...</p>
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-popover">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Processing authentication...</p>
+          <p className="text-muted-foreground">Processing authentication...</p>
           <p className="text-xs text-gray-500 mt-2">Please wait...</p>
         </div>
       </div>
-    );
+    )
   }
 
-  return null;
+  return null
 }

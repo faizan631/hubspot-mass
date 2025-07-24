@@ -1,14 +1,27 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import type { User } from "@supabase/supabase-js"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useState, useEffect } from 'react'
+import type { User } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   Dialog,
   DialogContent,
@@ -17,9 +30,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { useToast } from "@/hooks/use-toast"
-import { RotateCcw, Calendar, FileText, AlertTriangle, Crown, Eye, Undo2 } from "lucide-react"
+} from '@/components/ui/dialog'
+import { useToast } from '@/hooks/use-toast'
+import { RotateCcw, Calendar, FileText, AlertTriangle, Crown, Eye, Undo2 } from 'lucide-react'
 
 interface RollbackManagerProps {
   user: User
@@ -45,10 +58,14 @@ interface BackupDate {
   pages_affected: number
 }
 
-export default function RollbackManager({ user, hubspotToken, userSettings }: RollbackManagerProps) {
+export default function RollbackManager({
+  user,
+  hubspotToken,
+  userSettings,
+}: RollbackManagerProps) {
   const [availableDates, setAvailableDates] = useState<BackupDate[]>([])
-  const [selectedDate, setSelectedDate] = useState("default")
-  const [selectedPageId, setSelectedPageId] = useState("default")
+  const [selectedDate, setSelectedDate] = useState('default')
+  const [selectedPageId, setSelectedPageId] = useState('default')
   const [changes, setChanges] = useState<ChangeRecord[]>([])
   const [pages, setPages] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -63,14 +80,14 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
   }, [])
 
   useEffect(() => {
-    if (selectedDate !== "default") {
+    if (selectedDate !== 'default') {
       loadChangesForDate(selectedDate)
       loadPagesForDate(selectedDate)
     }
   }, [selectedDate])
 
   useEffect(() => {
-    if (selectedDate !== "default" && selectedPageId !== "default") {
+    if (selectedDate !== 'default' && selectedPageId !== 'default') {
       loadChangesForPage(selectedDate, selectedPageId)
     }
   }, [selectedDate, selectedPageId])
@@ -78,16 +95,16 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
   const loadAvailableDates = async () => {
     try {
       const { data, error } = await supabase
-        .from("change_history")
-        .select("changed_at")
-        .eq("user_id", user.id)
-        .order("changed_at", { ascending: false })
+        .from('change_history')
+        .select('changed_at')
+        .eq('user_id', user.id)
+        .order('changed_at', { ascending: false })
 
       if (error) throw error
 
       // Group changes by date
       const dateGroups = data.reduce((acc: Record<string, any>, change) => {
-        const date = change.changed_at.split("T")[0]
+        const date = change.changed_at.split('T')[0]
         if (!acc[date]) {
           acc[date] = { changes: 0, pages: new Set() }
         }
@@ -103,7 +120,7 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
 
       setAvailableDates(dates)
     } catch (error) {
-      console.error("Error loading available dates:", error)
+      console.error('Error loading available dates:', error)
     }
   }
 
@@ -115,21 +132,21 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
       endDate.setDate(endDate.getDate() + 1)
 
       const { data, error } = await supabase
-        .from("change_history")
-        .select("*")
-        .eq("user_id", user.id)
-        .gte("changed_at", startDate.toISOString())
-        .lt("changed_at", endDate.toISOString())
-        .order("changed_at", { ascending: false })
+        .from('change_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('changed_at', startDate.toISOString())
+        .lt('changed_at', endDate.toISOString())
+        .order('changed_at', { ascending: false })
 
       if (error) throw error
       setChanges(data || [])
     } catch (error) {
-      console.error("Error loading changes:", error)
+      console.error('Error loading changes:', error)
       toast({
-        title: "Error",
-        description: "Failed to load changes for selected date",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to load changes for selected date',
+        variant: 'destructive',
       })
     }
     setLoading(false)
@@ -138,27 +155,27 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
   const loadPagesForDate = async (date: string) => {
     try {
       const { data, error } = await supabase
-        .from("change_history")
-        .select("page_id")
-        .eq("user_id", user.id)
-        .gte("changed_at", `${date}T00:00:00`)
-        .lt("changed_at", `${date}T23:59:59`)
+        .from('change_history')
+        .select('page_id')
+        .eq('user_id', user.id)
+        .gte('changed_at', `${date}T00:00:00`)
+        .lt('changed_at', `${date}T23:59:59`)
 
       if (error) throw error
 
-      const uniquePageIds = [...new Set(data.map((item) => item.page_id))]
+      const uniquePageIds = [...new Set(data.map(item => item.page_id))]
 
       // Get page details from snapshots
       const { data: pageData, error: pageError } = await supabase
-        .from("page_snapshots")
-        .select("page_id, page_name, page_url")
-        .eq("user_id", user.id)
-        .in("page_id", uniquePageIds)
+        .from('page_snapshots')
+        .select('page_id, page_name, page_url')
+        .eq('user_id', user.id)
+        .in('page_id', uniquePageIds)
 
       if (pageError) throw pageError
       setPages(pageData || [])
     } catch (error) {
-      console.error("Error loading pages:", error)
+      console.error('Error loading pages:', error)
     }
   }
 
@@ -170,18 +187,18 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
       endDate.setDate(endDate.getDate() + 1)
 
       const { data, error } = await supabase
-        .from("change_history")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("page_id", pageId)
-        .gte("changed_at", startDate.toISOString())
-        .lt("changed_at", endDate.toISOString())
-        .order("changed_at", { ascending: false })
+        .from('change_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('page_id', pageId)
+        .gte('changed_at', startDate.toISOString())
+        .lt('changed_at', endDate.toISOString())
+        .order('changed_at', { ascending: false })
 
       if (error) throw error
       setChanges(data || [])
     } catch (error) {
-      console.error("Error loading page changes:", error)
+      console.error('Error loading page changes:', error)
     }
     setLoading(false)
   }
@@ -189,27 +206,27 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
   const revertChange = async (change: ChangeRecord) => {
     if (!userSettings.is_premium) {
       toast({
-        title: "Premium Feature",
-        description: "Rollback functionality requires a Premium subscription",
-        variant: "destructive",
+        title: 'Premium Feature',
+        description: 'Rollback functionality requires a Premium subscription',
+        variant: 'destructive',
       })
       return
     }
 
     if (!hubspotToken) {
       toast({
-        title: "Error",
-        description: "HubSpot connection required for rollback",
-        variant: "destructive",
+        title: 'Error',
+        description: 'HubSpot connection required for rollback',
+        variant: 'destructive',
       })
       return
     }
 
     setReverting(change.id)
     try {
-      const response = await fetch("/api/history/revert", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/history/revert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user.id,
           pageId: change.page_id,
@@ -222,25 +239,25 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
       const data = await response.json()
       if (data.success) {
         toast({
-          title: "Change Reverted! ✅",
+          title: 'Change Reverted! ✅',
           description: `Successfully reverted ${change.field_name} to previous value`,
         })
 
         // Refresh the changes list
-        if (selectedDate !== "default" && selectedPageId !== "default") {
+        if (selectedDate !== 'default' && selectedPageId !== 'default') {
           loadChangesForPage(selectedDate, selectedPageId)
-        } else if (selectedDate !== "default") {
+        } else if (selectedDate !== 'default') {
           loadChangesForDate(selectedDate)
         }
       } else {
         throw new Error(data.error)
       }
     } catch (error) {
-      console.error("Revert error:", error)
+      console.error('Revert error:', error)
       toast({
-        title: "Revert Failed",
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
+        title: 'Revert Failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
       })
     }
     setReverting(null)
@@ -248,41 +265,43 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
 
   const getChangeTypeColor = (type: string) => {
     switch (type) {
-      case "create":
-        return "bg-green-100 text-green-800"
-      case "update":
-        return "bg-blue-100 text-blue-800"
-      case "delete":
-        return "bg-red-100 text-red-800"
-      case "revert":
-        return "bg-purple-100 text-purple-800"
+      case 'create':
+        return 'bg-green-100 text-green-800'
+      case 'update':
+        return 'bg-blue-100 text-blue-800'
+      case 'delete':
+        return 'bg-red-100 text-red-800'
+      case 'revert':
+        return 'bg-purple-100 text-purple-800'
       default:
-        return "bg-gray-100 text-gray-800"
+        return 'bg-muted text-gray-800'
     }
   }
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    return new Date(dateString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     })
   }
 
   if (!userSettings.is_premium) {
     return (
-      <Card className="border-yellow-200 bg-yellow-50">
+      <Card className="border-yellow-500 dark:border-yellow-700 bg-yellow-100 dark:bg-yellow-900/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Crown className="h-5 w-5 text-yellow-600" />
+            <Crown className="h-5 w-5 text-yellow-800 dark:text-yellow-600" />
             Advanced Rollback & Recovery (Premium)
           </CardTitle>
-          <CardDescription>Rollback any change to any previous version with detailed change tracking</CardDescription>
+          <CardDescription>
+            Rollback any change to any previous version with detailed change tracking
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-white border border-yellow-200 rounded-lg p-4">
+          <div className="bg-background border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
             <h4 className="font-medium mb-2">Premium Rollback Features:</h4>
             <ul className="text-sm space-y-1">
               <li>• View detailed change history by date and page</li>
@@ -310,7 +329,9 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
             <RotateCcw className="h-5 w-5" />
             Rollback & Recovery
           </CardTitle>
-          <CardDescription>Select a backup date and page to view and revert changes</CardDescription>
+          <CardDescription>
+            Select a backup date and page to view and revert changes
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -321,7 +342,7 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
                   <SelectValue placeholder="Choose a backup date..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableDates.map((dateInfo) => (
+                  {availableDates.map(dateInfo => (
                     <SelectItem key={dateInfo.date} value={dateInfo.date}>
                       <div className="flex items-center justify-between w-full">
                         <span>{new Date(dateInfo.date).toLocaleDateString()}</span>
@@ -343,7 +364,7 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="default">All Pages</SelectItem>
-                  {pages.map((page) => (
+                  {pages.map(page => (
                     <SelectItem key={page.page_id} value={page.page_id}>
                       {page.page_name || page.page_id}
                     </SelectItem>
@@ -353,17 +374,18 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
             </div>
           </div>
 
-          {selectedDate !== "default" && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          {selectedDate !== 'default' && (
+            <div className="bg-accent border border-blue-200 rounded-lg p-3">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-blue-600" />
                 <span className="font-medium text-blue-900">
                   Showing changes for {new Date(selectedDate).toLocaleDateString()}
                 </span>
               </div>
-              {selectedPageId !== "default" && (
+              {selectedPageId !== 'default' && (
                 <p className="text-sm text-blue-700 mt-1">
-                  Filtered to: {pages.find((p) => p.page_id === selectedPageId)?.page_name || selectedPageId}
+                  Filtered to:{' '}
+                  {pages.find(p => p.page_id === selectedPageId)?.page_name || selectedPageId}
                 </p>
               )}
             </div>
@@ -372,27 +394,29 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
       </Card>
 
       {/* Changes Table */}
-      {selectedDate !== "default" && (
+      {selectedDate !== 'default' && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
               Change History
             </CardTitle>
-            <CardDescription>Review and revert individual changes made on the selected date</CardDescription>
+            <CardDescription>
+              Review and revert individual changes made on the selected date
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="animate-pulse space-y-4">
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                <div className="h-4 bg-muted/50 rounded w-3/4"></div>
+                <div className="h-4 bg-muted/50 rounded w-1/2"></div>
+                <div className="h-4 bg-muted/50 rounded w-2/3"></div>
               </div>
             ) : changes.length === 0 ? (
               <div className="text-center py-8">
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <FileText className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No Changes Found</h3>
-                <p className="text-gray-600">No changes were made on the selected date.</p>
+                <p className="text-muted-foreground">No changes were made on the selected date.</p>
               </div>
             ) : (
               <div className="border rounded-lg max-h-96 overflow-auto">
@@ -408,9 +432,11 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {changes.map((change) => (
+                    {changes.map(change => (
                       <TableRow key={change.id}>
-                        <TableCell className="text-sm">{formatDateTime(change.changed_at)}</TableCell>
+                        <TableCell className="text-sm">
+                          {formatDateTime(change.changed_at)}
+                        </TableCell>
                         <TableCell className="font-medium max-w-[150px] truncate">
                           {change.page_name || change.page_id}
                         </TableCell>
@@ -418,27 +444,33 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
                         <TableCell className="max-w-[200px]">
                           <div className="space-y-1">
                             <div className="text-sm">
-                              <span className="text-red-600">From:</span>{" "}
+                              <span className="text-red-600">From:</span>{' '}
                               <span className="font-mono bg-red-50 px-1 rounded text-xs">
-                                {change.old_value || "(empty)"}
+                                {change.old_value || '(empty)'}
                               </span>
                             </div>
                             <div className="text-sm">
-                              <span className="text-green-600">To:</span>{" "}
+                              <span className="text-green-600">To:</span>{' '}
                               <span className="font-mono bg-green-50 px-1 rounded text-xs">
-                                {change.new_value || "(empty)"}
+                                {change.new_value || '(empty)'}
                               </span>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={getChangeTypeColor(change.change_type)}>{change.change_type}</Badge>
+                          <Badge className={getChangeTypeColor(change.change_type)}>
+                            {change.change_type}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Dialog>
                               <DialogTrigger asChild>
-                                <Button variant="outline" size="sm" onClick={() => setPreviewChange(change)}>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setPreviewChange(change)}
+                                >
                                   <Eye className="h-3 w-3 mr-1" />
                                   Preview
                                 </Button>
@@ -446,7 +478,9 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
                               <DialogContent>
                                 <DialogHeader>
                                   <DialogTitle>Change Preview</DialogTitle>
-                                  <DialogDescription>Review the change before reverting</DialogDescription>
+                                  <DialogDescription>
+                                    Review the change before reverting
+                                  </DialogDescription>
                                 </DialogHeader>
                                 {previewChange && (
                                   <div className="space-y-4">
@@ -463,7 +497,9 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
                                       </div>
                                       <div>
                                         <Label>Change Type:</Label>
-                                        <Badge className={getChangeTypeColor(previewChange.change_type)}>
+                                        <Badge
+                                          className={getChangeTypeColor(previewChange.change_type)}
+                                        >
                                           {previewChange.change_type}
                                         </Badge>
                                       </div>
@@ -475,13 +511,13 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
                                     <div className="space-y-2">
                                       <Label>Previous Value:</Label>
                                       <div className="p-2 bg-red-50 border border-red-200 rounded font-mono text-sm">
-                                        {previewChange.old_value || "(empty)"}
+                                        {previewChange.old_value || '(empty)'}
                                       </div>
                                     </div>
                                     <div className="space-y-2">
                                       <Label>Current Value:</Label>
                                       <div className="p-2 bg-green-50 border border-green-200 rounded font-mono text-sm">
-                                        {previewChange.new_value || "(empty)"}
+                                        {previewChange.new_value || '(empty)'}
                                       </div>
                                     </div>
                                   </div>
@@ -493,7 +529,7 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
                                     variant="destructive"
                                   >
                                     {reverting === previewChange?.id ? (
-                                      "Reverting..."
+                                      'Reverting...'
                                     ) : (
                                       <>
                                         <Undo2 className="h-3 w-3 mr-1" />
@@ -505,7 +541,7 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
                               </DialogContent>
                             </Dialog>
 
-                            {change.change_type !== "create" && change.old_value && (
+                            {change.change_type !== 'create' && change.old_value && (
                               <Button
                                 size="sm"
                                 variant="destructive"
@@ -545,8 +581,9 @@ export default function RollbackManager({ user, hubspotToken, userSettings }: Ro
             <div>
               <h4 className="font-medium text-amber-900">Safety Notice</h4>
               <p className="text-sm text-amber-800 mt-1">
-                Rollback operations immediately update your HubSpot pages. All rollback actions are logged for audit
-                purposes. Consider creating a backup before performing bulk rollbacks.
+                Rollback operations immediately update your HubSpot pages. All rollback actions are
+                logged for audit purposes. Consider creating a backup before performing bulk
+                rollbacks.
               </p>
             </div>
           </div>

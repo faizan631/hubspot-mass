@@ -1,11 +1,11 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { AlertCircle, ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { AlertCircle, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 
 export default function AuthCodeError() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-popover flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -24,7 +24,7 @@ export default function AuthCodeError() {
             </ul>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-accent border border-blue-200 rounded-lg p-4">
             <h4 className="font-medium text-blue-900 mb-2">What to do next:</h4>
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• Go back and request a new magic link</li>

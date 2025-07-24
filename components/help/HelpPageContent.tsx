@@ -1,33 +1,33 @@
 // components/help/HelpPageContent.tsx
 
-import { Lightbulb, CloudUpload, Clock, RefreshCw } from "lucide-react";
+import { Lightbulb, CloudUpload, Clock, RefreshCw } from 'lucide-react'
 
 const steps = [
   {
     icon: <Lightbulb className="w-6 h-6 text-yellow-500" />,
-    title: "Connect HubSpot",
-    description: "Link your HubSpot account to begin managing content.",
+    title: 'Connect HubSpot',
+    description: 'Link your HubSpot account to begin managing content.',
   },
   {
     icon: <CloudUpload className="w-6 h-6 text-blue-500" />,
-    title: "Enable Backups",
-    description: "Set up daily automated backups to Google Sheets.",
+    title: 'Enable Backups',
+    description: 'Set up daily automated backups to Google Sheets.',
   },
   {
     icon: <Clock className="w-6 h-6 text-green-500" />,
-    title: "View History",
-    description: "Browse version history and review past changes.",
+    title: 'View History',
+    description: 'Browse version history and review past changes.',
   },
   {
     icon: <RefreshCw className="w-6 h-6 text-purple-500" />,
-    title: "Rollback Changes",
-    description: "Revert pages to any previous version instantly.",
+    title: 'Rollback Changes',
+    description: 'Revert pages to any previous version instantly.',
   },
-];
+]
 
 export default function HelpPageContent() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 bg">
       <h1 className="text-3xl font-bold text-center">Welcome to Smurves 🎉</h1>
       <p className="text-center text-muted-foreground">
         Here’s a quick guide to help you get started.
@@ -36,7 +36,7 @@ export default function HelpPageContent() {
         {steps.map((step, idx) => (
           <div
             key={idx}
-            className="bg-white dark:bg-gray-900 rounded-2xl shadow-md p-6 flex items-start space-x-4"
+            className="bg-background rounded-2xl shadow-md p-6 flex items-start space-x-4"
           >
             <div>{step.icon}</div>
             <div>
@@ -47,5 +47,5 @@ export default function HelpPageContent() {
         ))}
       </div>
     </div>
-  );
+  )
 }

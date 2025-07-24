@@ -1,13 +1,7 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -15,127 +9,129 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { RefreshCw, TestTube, Trash2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { RefreshCw, TestTube, Trash2 } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 
 interface SyncHistoryProps {
-  userId: string;
-  refreshKey: number;
+  userId: string
+  refreshKey: number
 }
 
 interface SyncSession {
-  id: string;
-  sheet_id: string;
-  tab_name: string;
-  content_type: string;
-  filters_used: any;
-  timestamp: string;
-  rows_synced?: number;
+  id: string
+  sheet_id: string
+  tab_name: string
+  content_type: string
+  filters_used: any
+  timestamp: string
+  rows_synced?: number
 }
 
 export default function SyncHistory({ userId, refreshKey }: SyncHistoryProps) {
-  const [sessions, setSessions] = useState<SyncSession[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [testing, setTesting] = useState(false);
-  const { toast } = useToast();
+  const [sessions, setSessions] = useState<SyncSession[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [testing, setTesting] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
-    fetchSyncHistory();
-  }, [userId, refreshKey]);
+    fetchSyncHistory()
+  }, [userId, refreshKey])
 
   const fetchSyncHistory = async () => {
-    console.log("=== Fetching Sync History ===");
-    console.log("UserId:", userId);
-    console.log("RefreshKey:", refreshKey);
+    console.log('=== Fetching Sync History ===')
+    console.log('UserId:', userId)
+    console.log('RefreshKey:', refreshKey)
 
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
 
     try {
-      const response = await fetch(`/api/sync-history?userId=${userId}`);
-      console.log("Response status:", response.status);
+      const response = await fetch(`/api/sync-history?userId=${userId}`)
+      console.log('Response status:', response.status)
 
-      const data = await response.json();
-      console.log("Response data:", data);
+      const data = await response.json()
+      console.log('Response data:', data)
 
       if (data.success) {
-        setSessions(data.sessions || []);
-        console.log("✅ Sessions loaded:", data.sessions?.length || 0);
+        setSessions(data.sessions || [])
+        console.log('✅ Sessions loaded:', data.sessions?.length || 0)
       } else {
-        setError(data.error || "Failed to load sync history");
-        console.error("❌ API error:", data.error);
+        setError(data.error || 'Failed to load sync history')
+        console.error('❌ API error:', data.error)
       }
     } catch (error) {
-      console.error("❌ Fetch error:", error);
-      setError("Failed to fetch sync history");
+      console.error('❌ Fetch error:', error)
+      setError('Failed to fetch sync history')
     }
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   const runTest = async () => {
-    setTesting(true);
+    setTesting(true)
     try {
-      const response = await fetch("/api/test/sync-sessions");
-      const data = await response.json();
+      const response = await fetch('/api/test/sync-sessions')
+      const data = await response.json()
 
       if (data.success) {
         toast({
-          title: "Test Successful ✅",
+          title: 'Test Successful ✅',
           description: `Insert: ${
-            data.tests.insert.success ? "✅" : "❌"
-          }, Read: ${data.tests.read.success ? "✅" : "❌"}`,
-        });
+            data.tests.insert.success ? '✅' : '❌'
+          }, Read: ${data.tests.read.success ? '✅' : '❌'}`,
+        })
         // Refresh the history after test
-        fetchSyncHistory();
+        fetchSyncHistory()
       } else {
         toast({
-          title: "Test Failed ❌",
-          description: data.error || "Test failed",
-          variant: "destructive",
-        });
+          title: 'Test Failed ❌',
+          description: data.error || 'Test failed',
+          variant: 'destructive',
+        })
       }
     } catch (error) {
+      console.error('Test error:', error)
       toast({
-        title: "Test Error",
-        description: "Failed to run test",
-        variant: "destructive",
-      });
+        title: 'Test Error',
+        description: 'Failed to run test',
+        variant: 'destructive',
+      })
     }
-    setTesting(false);
-  };
+    setTesting(false)
+  }
 
   const cleanupTestData = async () => {
     try {
-      const response = await fetch("/api/test/cleanup-sync-sessions", {
-        method: "POST",
-      });
-      const data = await response.json();
+      const response = await fetch('/api/test/cleanup-sync-sessions', {
+        method: 'POST',
+      })
+      const data = await response.json()
 
       if (data.success) {
         toast({
-          title: "Cleanup Complete",
+          title: 'Cleanup Complete',
           description: `Removed ${data.deletedCount} test records`,
-        });
-        fetchSyncHistory();
+        })
+        fetchSyncHistory()
       } else {
         toast({
-          title: "Cleanup Failed",
+          title: 'Cleanup Failed',
           description: data.error,
-          variant: "destructive",
-        });
+          variant: 'destructive',
+        })
       }
     } catch (error) {
+      console.error('Cleanup error:', error)
       toast({
-        title: "Cleanup Error",
-        description: "Failed to cleanup test data",
-        variant: "destructive",
-      });
+        title: 'Cleanup Error',
+        description: 'Failed to cleanup test data',
+        variant: 'destructive',
+      })
     }
-  };
+  }
 
   if (loading) {
     return (
@@ -145,13 +141,13 @@ export default function SyncHistory({ userId, refreshKey }: SyncHistoryProps) {
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-2">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+            <div className="h-4 bg-muted/50 rounded w-3/4"></div>
+            <div className="h-4 bg-muted/50 rounded w-1/2"></div>
+            <div className="h-4 bg-muted/50 rounded w-2/3"></div>
           </div>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   return (
@@ -171,9 +167,7 @@ export default function SyncHistory({ userId, refreshKey }: SyncHistoryProps) {
               className="flex-1 md:flex-none"
             >
               <TestTube className="h-4 w-4 mr-2" />
-              <span className="sr-only md:not-sr-only">
-                {testing ? "Testing..." : "Test DB"}
-              </span>
+              <span className="sr-only md:not-sr-only">{testing ? 'Testing...' : 'Test DB'}</span>
             </Button>
             <Button
               variant="outline"
@@ -203,12 +197,12 @@ export default function SyncHistory({ userId, refreshKey }: SyncHistoryProps) {
           </div>
         )}
 
-        <div className="mb-4 text-sm text-gray-600 bg-gray-50 p-3 rounded">
+        <div className="mb-4 text-sm text-muted-foreground bg-popover p-3 rounded">
           <p>
             <strong>Debug Info:</strong>
           </p>
           <p>
-            User ID: <code className="bg-gray-100 px-1 rounded">{userId}</code>
+            User ID: <code className="bg-muted px-1 rounded">{userId}</code>
           </p>
           <p>
             Sessions found: <strong>{sessions.length}</strong>
@@ -221,7 +215,7 @@ export default function SyncHistory({ userId, refreshKey }: SyncHistoryProps) {
         {sessions.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-500 mb-2">No sync history yet</p>
-            <p className="text-sm text-gray-400 mb-4">
+            <p className="text-sm text-muted-foreground/70 mb-4">
               Complete a sync from HubSpot to Google Sheets to see history here
             </p>
             <Button onClick={runTest} disabled={testing} variant="outline">
@@ -236,15 +230,13 @@ export default function SyncHistory({ userId, refreshKey }: SyncHistoryProps) {
                 <TableRow>
                   <TableHead className="whitespace-nowrap">Date</TableHead>
                   <TableHead className="whitespace-nowrap">Tab Name</TableHead>
-                  <TableHead className="whitespace-nowrap">
-                    Content Type
-                  </TableHead>
+                  <TableHead className="whitespace-nowrap">Content Type</TableHead>
                   <TableHead className="whitespace-nowrap">Filters</TableHead>
                   <TableHead className="whitespace-nowrap">Rows</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sessions.map((session) => (
+                {sessions.map(session => (
                   <TableRow key={session.id}>
                     <TableCell className="whitespace-nowrap">
                       {new Date(session.timestamp).toLocaleString()}
@@ -256,13 +248,11 @@ export default function SyncHistory({ userId, refreshKey }: SyncHistoryProps) {
                       <Badge variant="secondary">{session.content_type}</Badge>
                     </TableCell>
                     <TableCell>
-                      {session.filters_used &&
-                      typeof session.filters_used === "object" ? (
+                      {session.filters_used && typeof session.filters_used === 'object' ? (
                         <div className="space-y-1">
-                          {Object.entries(session.filters_used).map(
-                            ([key, value]) =>
-                              value &&
-                              value !== "all" && (
+                          {
+                            Object.entries(session.filters_used).map(([key, value]) =>
+                              value && value !== 'all' ? (
                                 <Badge
                                   key={key}
                                   variant="outline"
@@ -270,15 +260,16 @@ export default function SyncHistory({ userId, refreshKey }: SyncHistoryProps) {
                                 >
                                   {key}: {String(value)}
                                 </Badge>
-                              )
-                          )}
+                              ) : null
+                            ) as React.ReactNode[]
+                          }
                         </div>
                       ) : (
-                        <span className="text-gray-400">None</span>
+                        <span className="text-muted-foreground/70">None</span>
                       )}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      {session.rows_synced || "N/A"}
+                      {session.rows_synced || 'N/A'}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -288,5 +279,5 @@ export default function SyncHistory({ userId, refreshKey }: SyncHistoryProps) {
         )}
       </CardContent>
     </Card>
-  );
+  )
 }

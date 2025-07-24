@@ -1,12 +1,12 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useToast } from "@/hooks/use-toast"
-import { Clock, Database, Globe, Download } from "lucide-react"
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useToast } from '@/hooks/use-toast'
+import { Clock, Database, Globe, Download } from 'lucide-react'
 
 interface FreeTierBackupManagerProps {
   userId: string
@@ -15,7 +15,12 @@ interface FreeTierBackupManagerProps {
   sheetId: string
 }
 
-export default function FreeTierBackupManager({ userId, hubspotToken, domain, sheetId }: FreeTierBackupManagerProps) {
+export default function FreeTierBackupManager({
+  userId,
+  hubspotToken,
+  domain,
+  sheetId,
+}: FreeTierBackupManagerProps) {
   const [isRunning, setIsRunning] = useState(false)
   const [lastBackup, setLastBackup] = useState<string | null>(null)
   const [backupData, setBackupData] = useState<any>(null)
@@ -24,9 +29,9 @@ export default function FreeTierBackupManager({ userId, hubspotToken, domain, sh
   const runHubSpotAPIBackup = async () => {
     if (!hubspotToken) {
       toast({
-        title: "Error",
-        description: "HubSpot token is required",
-        variant: "destructive",
+        title: 'Error',
+        description: 'HubSpot token is required',
+        variant: 'destructive',
       })
       return
     }
@@ -34,24 +39,24 @@ export default function FreeTierBackupManager({ userId, hubspotToken, domain, sh
     setIsRunning(true)
     try {
       // Fetch data from HubSpot free tier APIs
-      const response = await fetch("/api/hubspot/free-tier-pages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/hubspot/free-tier-pages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: hubspotToken }),
       })
 
       const data = await response.json()
       if (data.success) {
         // Sync to Google Sheets
-        const syncResponse = await fetch("/api/google/sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const syncResponse = await fetch('/api/google/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             sheetId,
-            tabName: `hubspot-api-backup-${new Date().toISOString().split("T")[0]}`,
+            tabName: `hubspot-api-backup-${new Date().toISOString().split('T')[0]}`,
             pages: data.data,
             userId,
-            filters: { source: "hubspot_apis" },
+            filters: { source: 'hubspot_apis' },
           }),
         })
 
@@ -60,7 +65,7 @@ export default function FreeTierBackupManager({ userId, hubspotToken, domain, sh
           setBackupData(data)
           setLastBackup(new Date().toISOString())
           toast({
-            title: "HubSpot API Backup Complete! 🎉",
+            title: 'HubSpot API Backup Complete! 🎉',
             description: `Backed up ${data.total} items to Google Sheets`,
           })
         } else {
@@ -70,11 +75,11 @@ export default function FreeTierBackupManager({ userId, hubspotToken, domain, sh
         throw new Error(data.error)
       }
     } catch (error) {
-      console.error("HubSpot API backup error:", error)
+      console.error('HubSpot API backup error:', error)
       toast({
-        title: "Backup Failed",
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
+        title: 'Backup Failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
       })
     }
     setIsRunning(false)
@@ -83,9 +88,9 @@ export default function FreeTierBackupManager({ userId, hubspotToken, domain, sh
   const runWebsiteBackup = async () => {
     if (!domain) {
       toast({
-        title: "Error",
-        description: "Website domain is required",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Website domain is required',
+        variant: 'destructive',
       })
       return
     }
@@ -93,24 +98,24 @@ export default function FreeTierBackupManager({ userId, hubspotToken, domain, sh
     setIsRunning(true)
     try {
       // Scrape website
-      const response = await fetch("/api/hubspot/website-scraper", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/hubspot/website-scraper', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ domain, hubspotToken }),
       })
 
       const data = await response.json()
       if (data.success) {
         // Sync to Google Sheets
-        const syncResponse = await fetch("/api/google/sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const syncResponse = await fetch('/api/google/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             sheetId,
-            tabName: `website-backup-${new Date().toISOString().split("T")[0]}`,
+            tabName: `website-backup-${new Date().toISOString().split('T')[0]}`,
             pages: data.pages,
             userId,
-            filters: { source: "website_scraping", domain },
+            filters: { source: 'website_scraping', domain },
           }),
         })
 
@@ -119,7 +124,7 @@ export default function FreeTierBackupManager({ userId, hubspotToken, domain, sh
           setBackupData(data)
           setLastBackup(new Date().toISOString())
           toast({
-            title: "Website Backup Complete! 🎉",
+            title: 'Website Backup Complete! 🎉',
             description: `Backed up ${data.total} pages to Google Sheets`,
           })
         } else {
@@ -129,11 +134,11 @@ export default function FreeTierBackupManager({ userId, hubspotToken, domain, sh
         throw new Error(data.error)
       }
     } catch (error) {
-      console.error("Website backup error:", error)
+      console.error('Website backup error:', error)
       toast({
-        title: "Backup Failed",
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
+        title: 'Backup Failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
       })
     }
     setIsRunning(false)
@@ -144,19 +149,19 @@ export default function FreeTierBackupManager({ userId, hubspotToken, domain, sh
     try {
       // Run both backups sequentially
       await runHubSpotAPIBackup()
-      await new Promise((resolve) => setTimeout(resolve, 2000)) // Wait 2 seconds
+      await new Promise(resolve => setTimeout(resolve, 2000)) // Wait 2 seconds
       await runWebsiteBackup()
 
       toast({
-        title: "Full Backup Complete! 🎉",
-        description: "Both HubSpot APIs and website have been backed up",
+        title: 'Full Backup Complete! 🎉',
+        description: 'Both HubSpot APIs and website have been backed up',
       })
     } catch (error) {
-      console.error("Full backup error:", error)
+      console.error('Full backup error:', error)
       toast({
-        title: "Full Backup Failed",
-        description: "One or more backup methods failed",
-        variant: "destructive",
+        title: 'Full Backup Failed',
+        description: 'One or more backup methods failed',
+        variant: 'destructive',
       })
     }
     setIsRunning(false)
@@ -169,19 +174,25 @@ export default function FreeTierBackupManager({ userId, hubspotToken, domain, sh
           <Clock className="h-5 w-5" />
           Free Tier Backup System
         </CardTitle>
-        <CardDescription>Backup your HubSpot data using free tier APIs and website scraping</CardDescription>
+        <CardDescription>
+          Backup your HubSpot data using free tier APIs and website scraping
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Status */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Status:</span>
-            <Badge variant={isRunning ? "default" : "secondary"}>{isRunning ? "Running" : "Ready"}</Badge>
+            <Badge variant={isRunning ? 'default' : 'secondary'}>
+              {isRunning ? 'Running' : 'Ready'}
+            </Badge>
           </div>
           {lastBackup && (
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Last Backup:</span>
-              <span className="text-sm text-muted-foreground">{new Date(lastBackup).toLocaleString()}</span>
+              <span className="text-sm text-muted-foreground">
+                {new Date(lastBackup).toLocaleString()}
+              </span>
             </div>
           )}
         </div>
@@ -196,8 +207,15 @@ export default function FreeTierBackupManager({ userId, hubspotToken, domain, sh
 
           <TabsContent value="full" className="space-y-4">
             <div className="text-center space-y-4">
-              <p className="text-sm text-muted-foreground">Backup both HubSpot API data and website content</p>
-              <Button onClick={runFullBackup} disabled={isRunning || !sheetId} className="w-full" size="lg">
+              <p className="text-sm text-muted-foreground">
+                Backup both HubSpot API data and website content
+              </p>
+              <Button
+                onClick={runFullBackup}
+                disabled={isRunning || !sheetId}
+                className="w-full"
+                size="lg"
+              >
                 {isRunning ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -215,9 +233,11 @@ export default function FreeTierBackupManager({ userId, hubspotToken, domain, sh
 
           <TabsContent value="api" className="space-y-4">
             <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="bg-accent border border-blue-200 rounded-lg p-3">
                 <h4 className="font-medium text-blue-900 mb-1">HubSpot API Backup</h4>
-                <p className="text-sm text-blue-800">Backs up: Blog posts, Contacts, Companies, Deals, Forms</p>
+                <p className="text-sm text-blue-800">
+                  Backs up: Blog posts, Contacts, Companies, Deals, Forms
+                </p>
               </div>
               <Button
                 onClick={runHubSpotAPIBackup}
@@ -243,9 +263,15 @@ export default function FreeTierBackupManager({ userId, hubspotToken, domain, sh
             <div className="space-y-4">
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                 <h4 className="font-medium text-green-900 mb-1">Website Scraping Backup</h4>
-                <p className="text-sm text-green-800">Scrapes your website pages and extracts content</p>
+                <p className="text-sm text-green-800">
+                  Scrapes your website pages and extracts content
+                </p>
               </div>
-              <Button onClick={runWebsiteBackup} disabled={isRunning || !domain || !sheetId} className="w-full">
+              <Button
+                onClick={runWebsiteBackup}
+                disabled={isRunning || !domain || !sheetId}
+                className="w-full"
+              >
                 {isRunning ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -267,29 +293,31 @@ export default function FreeTierBackupManager({ userId, hubspotToken, domain, sh
           <h4 className="text-sm font-medium">Requirements:</h4>
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-sm">
-              <Badge variant={hubspotToken ? "default" : "secondary"} className="w-3 h-3 p-0">
-                {hubspotToken ? "✓" : "✗"}
+              <Badge variant={hubspotToken ? 'default' : 'secondary'} className="w-3 h-3 p-0">
+                {hubspotToken ? '✓' : '✗'}
               </Badge>
-              <span>HubSpot Token {hubspotToken ? "(Connected)" : "(Required for API backup)"}</span>
+              <span>
+                HubSpot Token {hubspotToken ? '(Connected)' : '(Required for API backup)'}
+              </span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <Badge variant={domain ? "default" : "secondary"} className="w-3 h-3 p-0">
-                {domain ? "✓" : "✗"}
+              <Badge variant={domain ? 'default' : 'secondary'} className="w-3 h-3 p-0">
+                {domain ? '✓' : '✗'}
               </Badge>
-              <span>Website Domain {domain ? `(${domain})` : "(Required for website backup)"}</span>
+              <span>Website Domain {domain ? `(${domain})` : '(Required for website backup)'}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <Badge variant={sheetId ? "default" : "secondary"} className="w-3 h-3 p-0">
-                {sheetId ? "✓" : "✗"}
+              <Badge variant={sheetId ? 'default' : 'secondary'} className="w-3 h-3 p-0">
+                {sheetId ? '✓' : '✗'}
               </Badge>
-              <span>Google Sheet {sheetId ? "(Connected)" : "(Required)"}</span>
+              <span>Google Sheet {sheetId ? '(Connected)' : '(Required)'}</span>
             </div>
           </div>
         </div>
 
         {/* Last Backup Results */}
         {backupData && (
-          <div className="bg-gray-50 border rounded-lg p-4">
+          <div className="bg-popover border rounded-lg p-4">
             <h4 className="font-medium mb-2">Last Backup Results:</h4>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
@@ -298,7 +326,8 @@ export default function FreeTierBackupManager({ userId, hubspotToken, domain, sh
               {backupData.breakdown &&
                 Object.entries(backupData.breakdown).map(([type, count]) => (
                   <div key={type}>
-                    <span className="font-medium capitalize">{type.replace("_", " ")}:</span> {count as number}
+                    <span className="font-medium capitalize">{type.replace('_', ' ')}:</span>{' '}
+                    {count as number}
                   </div>
                 ))}
             </div>

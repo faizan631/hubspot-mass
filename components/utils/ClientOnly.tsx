@@ -1,14 +1,14 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react'
 
 export default function ClientOnly({ children }: { children: React.ReactNode }) {
-  const [hasMounted, setHasMounted] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false)
 
   useEffect(() => {
-    setHasMounted(true);
-  }, []);
+    setHasMounted(true)
+  }, [])
 
-  if (!hasMounted) return null; // Don't render until mounted (no SSR)
-  return <>{children}</>;
+  if (!hasMounted) return null // Don't render until mounted (no SSR)
+  return <>{children}</>
 }

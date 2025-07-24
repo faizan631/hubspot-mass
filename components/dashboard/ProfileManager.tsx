@@ -1,11 +1,11 @@
 // components/dashboard/ProfileManager.tsx
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import type { User } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from 'react'
+import type { User } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/client'
+import { useToast } from '@/hooks/use-toast'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -13,94 +13,94 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Loader2, UserCircle, KeyRound } from "lucide-react";
+} from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Loader2, UserCircle, KeyRound } from 'lucide-react'
 
 interface ProfileManagerProps {
-  user: User;
+  user: User
 }
 
 export default function ProfileManager({ user }: ProfileManagerProps) {
-  const supabase = createClient();
-  const { toast } = useToast();
+  const supabase = createClient()
+  const { toast } = useToast()
 
-  const [fullName, setFullName] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [fullName, setFullName] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [isSavingPassword, setIsSavingPassword] = useState(false)
 
   // Populate the form with the user's current full name when the component loads
   useEffect(() => {
     if (user?.user_metadata?.full_name) {
-      setFullName(user.user_metadata.full_name);
+      setFullName(user.user_metadata.full_name)
     }
-  }, [user]);
+  }, [user])
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSavingProfile(true);
+    e.preventDefault()
+    setIsSavingProfile(true)
 
     const { error } = await supabase.auth.updateUser({
       data: { full_name: fullName },
-    });
+    })
 
     if (error) {
       toast({
-        title: "Error updating profile",
+        title: 'Error updating profile',
         description: error.message,
-        variant: "destructive",
-      });
+        variant: 'destructive',
+      })
     } else {
       toast({
-        title: "Profile Updated! 🎉",
-        description: "Your full name has been successfully updated.",
-      });
+        title: 'Profile Updated! 🎉',
+        description: 'Your full name has been successfully updated.',
+      })
     }
-    setIsSavingProfile(false);
-  };
+    setIsSavingProfile(false)
+  }
 
   const handlePasswordUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     if (newPassword !== confirmPassword) {
       toast({
-        title: "Passwords do not match",
-        description: "Please ensure both password fields are identical.",
-        variant: "destructive",
-      });
-      return;
+        title: 'Passwords do not match',
+        description: 'Please ensure both password fields are identical.',
+        variant: 'destructive',
+      })
+      return
     }
     if (newPassword.length < 6) {
-        toast({
-          title: "Password too short",
-          description: "Your new password must be at least 6 characters long.",
-          variant: "destructive",
-        });
-        return;
+      toast({
+        title: 'Password too short',
+        description: 'Your new password must be at least 6 characters long.',
+        variant: 'destructive',
+      })
+      return
     }
 
-    setIsSavingPassword(true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setIsSavingPassword(true)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
 
     if (error) {
       toast({
-        title: "Error updating password",
+        title: 'Error updating password',
         description: error.message,
-        variant: "destructive",
-      });
+        variant: 'destructive',
+      })
     } else {
       toast({
-        title: "Password Updated! 🔒",
-        description: "Your password has been changed successfully.",
-      });
-      setNewPassword("");
-      setConfirmPassword("");
+        title: 'Password Updated! 🔒',
+        description: 'Your password has been changed successfully.',
+      })
+      setNewPassword('')
+      setConfirmPassword('')
     }
-    setIsSavingPassword(false);
-  };
+    setIsSavingPassword(false)
+  }
 
   return (
     <div className="space-y-6">
@@ -109,8 +109,8 @@ export default function ProfileManager({ user }: ProfileManagerProps) {
         <form onSubmit={handleProfileUpdate}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-                <UserCircle className="h-5 w-5" />
-                Profile Information
+              <UserCircle className="h-5 w-5" />
+              Profile Information
             </CardTitle>
             <CardDescription>
               Update your personal details here. Your email address cannot be changed.
@@ -122,7 +122,7 @@ export default function ProfileManager({ user }: ProfileManagerProps) {
               <Input
                 id="fullName"
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                onChange={e => setFullName(e.target.value)}
                 placeholder="Your full name"
               />
             </div>
@@ -133,9 +133,7 @@ export default function ProfileManager({ user }: ProfileManagerProps) {
           </CardContent>
           <CardFooter className="border-t px-6 py-4">
             <Button type="submit" disabled={isSavingProfile}>
-              {isSavingProfile && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {isSavingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Profile
             </Button>
           </CardFooter>
@@ -147,8 +145,8 @@ export default function ProfileManager({ user }: ProfileManagerProps) {
         <form onSubmit={handlePasswordUpdate}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-                <KeyRound className="h-5 w-5" />
-                Change Password
+              <KeyRound className="h-5 w-5" />
+              Change Password
             </CardTitle>
             <CardDescription>
               Choose a new password. It must be at least 6 characters long.
@@ -161,7 +159,7 @@ export default function ProfileManager({ user }: ProfileManagerProps) {
                 id="newPassword"
                 type="password"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={e => setNewPassword(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -170,20 +168,18 @@ export default function ProfileManager({ user }: ProfileManagerProps) {
                 id="confirmPassword"
                 type="password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={e => setConfirmPassword(e.target.value)}
               />
             </div>
           </CardContent>
           <CardFooter className="border-t px-6 py-4">
             <Button type="submit" disabled={isSavingPassword}>
-              {isSavingPassword && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {isSavingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Update Password
             </Button>
           </CardFooter>
         </form>
       </Card>
     </div>
-  );
+  )
 }

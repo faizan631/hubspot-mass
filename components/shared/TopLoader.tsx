@@ -1,23 +1,23 @@
 // components/shared/TopLoader.tsx
-"use client";
+'use client'
 
-import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function TopLoader() {
-  const pathname = usePathname();
-  const [isLoading, setIsLoading] = useState(false);
+  const pathname = usePathname()
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    setIsLoading(true);
+    setIsLoading(true)
 
     const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1200); // Hide loader after 1.2 seconds regardless, adjust as needed
+      setIsLoading(false)
+    }, 1200) // Hide loader after 1.2 seconds regardless, adjust as needed
 
-    return () => clearTimeout(timer);
-  }, [pathname]);
+    return () => clearTimeout(timer)
+  }, [pathname])
 
   return (
     <AnimatePresence>
@@ -31,5 +31,5 @@ export default function TopLoader() {
         />
       )}
     </AnimatePresence>
-  );
+  )
 }

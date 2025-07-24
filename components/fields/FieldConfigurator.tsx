@@ -1,16 +1,29 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import type { User } from "@supabase/supabase-js"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
+import { useState, useEffect } from 'react'
+import type { User } from '@supabase/supabase-js'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
   DialogContent,
@@ -18,20 +31,29 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { useToast } from "@/hooks/use-toast"
-import { Settings, AlertTriangle, Shield, Plus, Edit, Trash2, Crown, CheckCircle } from "lucide-react"
+} from '@/components/ui/dialog'
+import { useToast } from '@/hooks/use-toast'
+import {
+  Settings,
+  AlertTriangle,
+  Shield,
+  Plus,
+  Edit,
+  Trash2,
+  Crown,
+  CheckCircle,
+} from 'lucide-react'
 
 interface FieldConfiguratorProps {
   user: User
-  fieldConfigs: any[]
-  isPremium: boolean
+  fieldConfigs?: any[]
+  isPremium?: boolean
 }
 
 interface FieldConfig {
   id: string
   field_name: string
-  field_type: "text" | "number" | "date" | "boolean" | "json" | "html"
+  field_type: 'text' | 'number' | 'date' | 'boolean' | 'json' | 'html'
   is_required: boolean
   is_high_risk: boolean
   validation_rules: string
@@ -42,38 +64,43 @@ interface FieldConfig {
 }
 
 const fieldTypes = [
-  { value: "text", label: "Text", description: "Plain text content" },
-  { value: "number", label: "Number", description: "Numeric values" },
-  { value: "date", label: "Date", description: "Date and time values" },
-  { value: "boolean", label: "Boolean", description: "True/false values" },
-  { value: "json", label: "JSON", description: "Structured data objects" },
-  { value: "html", label: "HTML", description: "Rich text and HTML content" },
+  { value: 'text', label: 'Text', description: 'Plain text content' },
+  { value: 'number', label: 'Number', description: 'Numeric values' },
+  { value: 'date', label: 'Date', description: 'Date and time values' },
+  { value: 'boolean', label: 'Boolean', description: 'True/false values' },
+  { value: 'json', label: 'JSON', description: 'Structured data objects' },
+  { value: 'html', label: 'HTML', description: 'Rich text and HTML content' },
 ]
 
 const commonFields = [
-  { name: "page_title", type: "text", description: "Page title and SEO title" },
-  { name: "meta_description", type: "text", description: "SEO meta description" },
-  { name: "page_content", type: "html", description: "Main page content and body" },
-  { name: "page_url", type: "text", description: "Page URL and slug" },
-  { name: "publish_date", type: "date", description: "Page publication date" },
-  { name: "last_modified", type: "date", description: "Last modification timestamp" },
-  { name: "is_published", type: "boolean", description: "Publication status" },
-  { name: "page_template", type: "text", description: "Template used for the page" },
+  { name: 'page_title', type: 'text', description: 'Page title and SEO title' },
+  { name: 'meta_description', type: 'text', description: 'SEO meta description' },
+  { name: 'page_content', type: 'html', description: 'Main page content and body' },
+  { name: 'page_url', type: 'text', description: 'Page URL and slug' },
+  { name: 'publish_date', type: 'date', description: 'Page publication date' },
+  { name: 'last_modified', type: 'date', description: 'Last modification timestamp' },
+  { name: 'is_published', type: 'boolean', description: 'Publication status' },
+  { name: 'page_template', type: 'text', description: 'Template used for the page' },
 ]
 
-export default function FieldConfigurator({ user, fieldConfigs, isPremium }: FieldConfiguratorProps) {
+export default function FieldConfigurator({
+  user,
+  fieldConfigs,
+  isPremium = false,
+}: FieldConfiguratorProps) {
+  console.log(user, fieldConfigs)
   const [configs, setConfigs] = useState<FieldConfig[]>([])
   const [loading, setLoading] = useState(false)
   const [editingConfig, setEditingConfig] = useState<FieldConfig | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [formData, setFormData] = useState({
-    field_name: "",
-    field_type: "text" as const,
+    field_name: '',
+    field_type: 'text' as FieldConfig['field_type'],
     is_required: false,
     is_high_risk: false,
-    validation_rules: "",
-    default_value: "",
-    description: "",
+    validation_rules: '',
+    default_value: '',
+    description: '',
   })
   const { toast } = useToast()
 
@@ -87,38 +114,38 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
       // Mock data for now - replace with actual API call
       const mockConfigs: FieldConfig[] = [
         {
-          id: "1",
-          field_name: "page_title",
-          field_type: "text",
+          id: '1',
+          field_name: 'page_title',
+          field_type: 'text',
           is_required: true,
           is_high_risk: false,
-          validation_rules: "min:1,max:60",
-          default_value: "",
-          description: "Page title for SEO and display",
+          validation_rules: 'min:1,max:60',
+          default_value: '',
+          description: 'Page title for SEO and display',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
         {
-          id: "2",
-          field_name: "page_content",
-          field_type: "html",
+          id: '2',
+          field_name: 'page_content',
+          field_type: 'html',
           is_required: true,
           is_high_risk: true,
-          validation_rules: "required",
-          default_value: "",
-          description: "Main page content - high risk for data loss",
+          validation_rules: 'required',
+          default_value: '',
+          description: 'Main page content - high risk for data loss',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
         {
-          id: "3",
-          field_name: "publish_date",
-          field_type: "date",
+          id: '3',
+          field_name: 'publish_date',
+          field_type: 'date',
           is_required: false,
           is_high_risk: false,
-          validation_rules: "date",
-          default_value: "",
-          description: "When the page was published",
+          validation_rules: 'date',
+          default_value: '',
+          description: 'When the page was published',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
@@ -126,11 +153,11 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
 
       setConfigs(mockConfigs)
     } catch (error) {
-      console.error("Load configs error:", error)
+      console.error('Load configs error:', error)
       toast({
-        title: "Failed to Load Configurations",
-        description: "Could not retrieve field configurations",
-        variant: "destructive",
+        title: 'Failed to Load Configurations',
+        description: 'Could not retrieve field configurations',
+        variant: 'destructive',
       })
     }
     setLoading(false)
@@ -139,9 +166,9 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
   const saveConfig = async () => {
     if (!formData.field_name.trim()) {
       toast({
-        title: "Error",
-        description: "Field name is required",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Field name is required',
+        variant: 'destructive',
       })
       return
     }
@@ -155,15 +182,15 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
       }
 
       if (editingConfig) {
-        setConfigs(configs.map((config) => (config.id === editingConfig.id ? configData : config)))
+        setConfigs(configs.map(config => (config.id === editingConfig.id ? configData : config)))
         toast({
-          title: "Configuration Updated",
+          title: 'Configuration Updated',
           description: `Field "${formData.field_name}" has been updated`,
         })
       } else {
         setConfigs([...configs, configData])
         toast({
-          title: "Configuration Created",
+          title: 'Configuration Created',
           description: `Field "${formData.field_name}" has been configured`,
         })
       }
@@ -171,10 +198,11 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
       resetForm()
       setDialogOpen(false)
     } catch (error) {
+      console.error('Save config error:', error)
       toast({
-        title: "Save Failed",
-        description: "Could not save field configuration",
-        variant: "destructive",
+        title: 'Save Failed',
+        description: 'Could not save field configuration',
+        variant: 'destructive',
       })
     }
   }
@@ -195,29 +223,30 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
 
   const deleteConfig = async (configId: string) => {
     try {
-      setConfigs(configs.filter((config) => config.id !== configId))
+      setConfigs(configs.filter(config => config.id !== configId))
       toast({
-        title: "Configuration Deleted",
-        description: "Field configuration has been removed",
+        title: 'Configuration Deleted',
+        description: 'Field configuration has been removed',
       })
     } catch (error) {
+      console.error('Delete config error:', error)
       toast({
-        title: "Delete Failed",
-        description: "Could not delete field configuration",
-        variant: "destructive",
+        title: 'Delete Failed',
+        description: 'Could not delete field configuration',
+        variant: 'destructive',
       })
     }
   }
 
   const resetForm = () => {
     setFormData({
-      field_name: "",
-      field_type: "text",
+      field_name: '',
+      field_type: 'text',
       is_required: false,
       is_high_risk: false,
-      validation_rules: "",
-      default_value: "",
-      description: "",
+      validation_rules: '',
+      default_value: '',
+      description: '',
     })
     setEditingConfig(null)
   }
@@ -227,9 +256,9 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
       field_name: field.name,
       field_type: field.type as any,
       is_required: false,
-      is_high_risk: field.name === "page_content",
-      validation_rules: "",
-      default_value: "",
+      is_high_risk: field.name === 'page_content',
+      validation_rules: '',
+      default_value: '',
       description: field.description,
     })
     setDialogOpen(true)
@@ -237,20 +266,20 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
 
   const getFieldTypeColor = (type: string) => {
     switch (type) {
-      case "text":
-        return "bg-blue-100 text-blue-800"
-      case "number":
-        return "bg-green-100 text-green-800"
-      case "date":
-        return "bg-purple-100 text-purple-800"
-      case "boolean":
-        return "bg-yellow-100 text-yellow-800"
-      case "json":
-        return "bg-orange-100 text-orange-800"
-      case "html":
-        return "bg-red-100 text-red-800"
+      case 'text':
+        return 'bg-blue-100 text-blue-800'
+      case 'number':
+        return 'bg-green-100 text-green-800'
+      case 'date':
+        return 'bg-purple-100 text-purple-800'
+      case 'boolean':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'json':
+        return 'bg-orange-100 text-orange-800'
+      case 'html':
+        return 'bg-red-100 text-red-800'
       default:
-        return "bg-gray-100 text-gray-800"
+        return 'bg-muted text-gray-800'
     }
   }
 
@@ -264,28 +293,32 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
             Field Configuration
           </CardTitle>
           <CardDescription>
-            Configure how your HubSpot fields are handled during backup and restore operations. Set validation rules,
-            mark high-risk fields, and define field types.
+            Configure how your HubSpot fields are handled during backup & restore operations. Set
+            validation rules, mark high-risk fields, and define field types.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="bg-accent border border-blue-200 rounded-lg p-3">
               <div className="text-2xl font-bold text-blue-600">{configs.length}</div>
               <div className="text-sm text-blue-700">Configured Fields</div>
             </div>
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <div className="text-2xl font-bold text-red-600">{configs.filter((c) => c.is_high_risk).length}</div>
+              <div className="text-2xl font-bold text-red-600">
+                {configs.filter(c => c.is_high_risk).length}
+              </div>
               <div className="text-sm text-red-700">High-Risk Fields</div>
             </div>
             <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <div className="text-2xl font-bold text-green-600">{configs.filter((c) => c.is_required).length}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {configs.filter(c => c.is_required).length}
+              </div>
               <div className="text-sm text-green-700">Required Fields</div>
             </div>
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
               <div className="text-2xl font-bold text-purple-600">
-                {configs.filter((c) => c.validation_rules).length}
+                {configs.filter(c => c.validation_rules).length}
               </div>
               <div className="text-sm text-purple-700">With Validation</div>
             </div>
@@ -294,7 +327,7 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
           {/* Actions */}
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
-              <Dialog open={dialogOpen} onValueChange={setDialogOpen}>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
                   <Button onClick={() => resetForm()} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
@@ -303,9 +336,9 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>{editingConfig ? "Edit" : "Add"} Field Configuration</DialogTitle>
+                    <DialogTitle>{editingConfig ? 'Edit' : 'Add'} Field Configuration</DialogTitle>
                     <DialogDescription>
-                      Configure how this field should be handled during backup and restore operations.
+                      Configure how this field should be handled during backup & restore operations.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
@@ -315,7 +348,7 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
                         <Input
                           id="field-name"
                           value={formData.field_name}
-                          onChange={(e) => setFormData({ ...formData, field_name: e.target.value })}
+                          onChange={e => setFormData({ ...formData, field_name: e.target.value })}
                           placeholder="page_title"
                         />
                       </div>
@@ -323,13 +356,15 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
                         <Label htmlFor="field-type">Field Type</Label>
                         <Select
                           value={formData.field_type}
-                          onValueChange={(value: any) => setFormData({ ...formData, field_type: value })}
+                          onValueChange={(value: any) =>
+                            setFormData({ ...formData, field_type: value })
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {fieldTypes.map((type) => (
+                            {fieldTypes.map(type => (
                               <SelectItem key={type.value} value={type.value}>
                                 <div>
                                   <div className="font-medium">{type.label}</div>
@@ -347,7 +382,7 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
                       <Input
                         id="description"
                         value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        onChange={e => setFormData({ ...formData, description: e.target.value })}
                         placeholder="Brief description of this field"
                       />
                     </div>
@@ -357,7 +392,9 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
                         <Switch
                           id="required"
                           checked={formData.is_required}
-                          onCheckedChange={(checked) => setFormData({ ...formData, is_required: checked })}
+                          onCheckedChange={checked =>
+                            setFormData({ ...formData, is_required: checked })
+                          }
                         />
                         <Label htmlFor="required">Required Field</Label>
                       </div>
@@ -365,7 +402,9 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
                         <Switch
                           id="high-risk"
                           checked={formData.is_high_risk}
-                          onCheckedChange={(checked) => setFormData({ ...formData, is_high_risk: checked })}
+                          onCheckedChange={checked =>
+                            setFormData({ ...formData, is_high_risk: checked })
+                          }
                           disabled={!isPremium}
                         />
                         <Label htmlFor="high-risk" className="flex items-center gap-1">
@@ -380,7 +419,9 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
                       <Textarea
                         id="validation"
                         value={formData.validation_rules}
-                        onChange={(e) => setFormData({ ...formData, validation_rules: e.target.value })}
+                        onChange={e =>
+                          setFormData({ ...formData, validation_rules: e.target.value })
+                        }
                         placeholder="required,min:1,max:100"
                         disabled={!isPremium}
                         rows={2}
@@ -398,7 +439,7 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
                       <Input
                         id="default-value"
                         value={formData.default_value}
-                        onChange={(e) => setFormData({ ...formData, default_value: e.target.value })}
+                        onChange={e => setFormData({ ...formData, default_value: e.target.value })}
                         placeholder="Default value if field is empty"
                       />
                     </div>
@@ -407,7 +448,9 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
                       <Button variant="outline" onClick={() => setDialogOpen(false)}>
                         Cancel
                       </Button>
-                      <Button onClick={saveConfig}>{editingConfig ? "Update" : "Create"} Configuration</Button>
+                      <Button onClick={saveConfig}>
+                        {editingConfig ? 'Update' : 'Create'} Configuration
+                      </Button>
                     </div>
                   </div>
                 </DialogContent>
@@ -421,23 +464,25 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
       <Card>
         <CardHeader>
           <CardTitle>Common HubSpot Fields</CardTitle>
-          <CardDescription>Quickly add configurations for commonly used HubSpot page fields</CardDescription>
+          <CardDescription>
+            Quickly add configurations for commonly used HubSpot page fields
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {commonFields.map((field, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                className="flex items-center justify-between p-3 border rounded-lg hover:bg-popover cursor-pointer"
                 onClick={() => addCommonField(field)}
               >
                 <div>
                   <div className="font-medium">{field.name}</div>
-                  <div className="text-sm text-gray-600">{field.description}</div>
+                  <div className="text-sm text-muted-foreground">{field.description}</div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge className={getFieldTypeColor(field.type)}>{field.type}</Badge>
-                  <Plus className="h-4 w-4 text-gray-400" />
+                  <Plus className="h-4 w-4 text-muted-foreground/70" />
                 </div>
               </div>
             ))}
@@ -454,16 +499,17 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
         <CardContent>
           {loading ? (
             <div className="animate-pulse space-y-4">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+              <div className="h-4 bg-muted/50 rounded w-3/4"></div>
+              <div className="h-4 bg-muted/50 rounded w-1/2"></div>
+              <div className="h-4 bg-muted/50 rounded w-2/3"></div>
             </div>
           ) : configs.length === 0 ? (
             <div className="text-center py-8">
-              <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <Settings className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No Field Configurations</h3>
-              <p className="text-gray-600 mb-4">
-                Start by adding configurations for your HubSpot fields to control how they're handled during backups.
+              <p className="text-muted-foreground mb-4">
+                Start by adding configurations for your HubSpot fields to control how they're
+                handled during backups.
               </p>
               <Button onClick={() => setDialogOpen(true)}>Add Your First Configuration</Button>
             </div>
@@ -481,13 +527,15 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {configs.map((config) => (
+                  {configs.map(config => (
                     <TableRow key={config.id}>
                       <TableCell>
                         <div className="font-medium font-mono">{config.field_name}</div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={getFieldTypeColor(config.field_type)}>{config.field_type}</Badge>
+                        <Badge className={getFieldTypeColor(config.field_type)}>
+                          {config.field_type}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
@@ -497,7 +545,10 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
                             </Badge>
                           )}
                           {config.is_high_risk && (
-                            <Badge variant="destructive" className="text-xs flex items-center gap-1">
+                            <Badge
+                              variant="destructive"
+                              className="text-xs flex items-center gap-1"
+                            >
                               <AlertTriangle className="h-2 w-2" />
                               High Risk
                             </Badge>
@@ -506,13 +557,17 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
                       </TableCell>
                       <TableCell>
                         {config.validation_rules ? (
-                          <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">{config.validation_rules}</code>
+                          <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                            {config.validation_rules}
+                          </code>
                         ) : (
-                          <span className="text-gray-400 text-sm">None</span>
+                          <span className="text-muted-foreground/70 text-sm">None</span>
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="max-w-xs truncate text-sm text-gray-600">{config.description}</div>
+                        <div className="max-w-xs truncate text-sm text-muted-foreground">
+                          {config.description}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -551,14 +606,15 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
             <li className="flex items-start gap-2">
               <CheckCircle className="h-4 w-4 mt-0.5 text-amber-600" />
               <span>
-                <strong>High-Risk Fields:</strong> Mark fields like page_content, custom_html, or scripts as high-risk
-                to get extra confirmation before changes
+                <strong>High-Risk Fields:</strong> Mark fields like page_content, custom_html, or
+                scripts as high-risk to get extra confirmation before changes
               </span>
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle className="h-4 w-4 mt-0.5 text-amber-600" />
               <span>
-                <strong>Required Fields:</strong> Mark essential fields as required to prevent incomplete backups
+                <strong>Required Fields:</strong> Mark essential fields as required to prevent
+                incomplete backups
               </span>
             </li>
             <li className="flex items-start gap-2">
@@ -571,7 +627,8 @@ export default function FieldConfigurator({ user, fieldConfigs, isPremium }: Fie
             <li className="flex items-start gap-2">
               <CheckCircle className="h-4 w-4 mt-0.5 text-amber-600" />
               <span>
-                <strong>Field Types:</strong> Choose the correct type to enable proper data handling and validation
+                <strong>Field Types:</strong> Choose the correct type to enable proper data handling
+                and validation
               </span>
             </li>
           </ul>

@@ -1,27 +1,23 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { google } from "googleapis";
+import { type NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { google } from 'googleapis'
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const code = searchParams.get("code");
-    const state = searchParams.get("state"); // This contains the user ID
-    const error = searchParams.get("error");
+    const { searchParams } = new URL(request.url)
+    const code = searchParams.get('code')
+    const state = searchParams.get('state') // This contains the user ID
+    const error = searchParams.get('error')
 
     if (error) {
-      console.error("Google OAuth error:", error);
-      return NextResponse.redirect(
-        new URL("/dashboard?error=oauth_failed", request.url)
-      );
+      console.error('Google OAuth error:', error)
+      return NextResponse.redirect(new URL('/dashboard?error=oauth_failed', request.url))
     }
 
     if (!code || !state) {
-      return NextResponse.redirect(
-        new URL("/dashboard?error=missing_params", request.url)
-      );
+      return NextResponse.redirect(new URL('/dashboard?error=missing_params', request.url))
     }
 
     if (
@@ -29,31 +25,27 @@ export async function GET(request: NextRequest) {
       !process.env.GOOGLE_CLIENT_SECRET ||
       !process.env.GOOGLE_REDIRECT_URI
     ) {
-      return NextResponse.redirect(
-        new URL("/dashboard?error=oauth_not_configured", request.url)
-      );
+      return NextResponse.redirect(new URL('/dashboard?error=oauth_not_configured', request.url))
     }
 
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
       process.env.GOOGLE_REDIRECT_URI
-    );
+    )
 
     // Exchange code for tokens
-    const { tokens } = await oauth2Client.getToken(code);
+    const { tokens } = await oauth2Client.getToken(code)
 
     if (!tokens.access_token) {
-      return NextResponse.redirect(
-        new URL("/dashboard?error=token_exchange_failed", request.url)
-      );
+      return NextResponse.redirect(new URL('/dashboard?error=token_exchange_failed', request.url))
     }
 
     // Save tokens to database
-    const supabase = createClient();
-    const userId = state;
+    const supabase = createClient()
+    const userId = state
 
-    const { error: dbError } = await supabase.from("user_settings").upsert(
+    const { error: dbError } = await supabase.from('user_settings').upsert(
       {
         user_id: userId,
         google_access_token: tokens.access_token,
@@ -63,34 +55,28 @@ export async function GET(request: NextRequest) {
           : null,
         updated_at: new Date().toISOString(),
       },
-      { onConflict: "user_id" } // ✅ Fix: Tell Supabase how to handle conflict
-    );
+      { onConflict: 'user_id' } // ✅ Fix: Tell Supabase how to handle conflict
+    )
 
     if (dbError) {
-      console.error("Database error:", dbError);
-      return NextResponse.redirect(
-        new URL("/dashboard?error=db_error", request.url)
-      );
+      console.error('Database error:', dbError)
+      return NextResponse.redirect(new URL('/dashboard?error=db_error', request.url))
     }
 
     // Log the connection
-    await supabase.from("audit_logs").insert({
+    await supabase.from('audit_logs').insert({
       user_id: userId,
-      action_type: "connect",
-      resource_type: "google_sheets",
+      action_type: 'connect',
+      resource_type: 'google_sheets',
       details: {
         connected_at: new Date().toISOString(),
         has_refresh_token: !!tokens.refresh_token,
       },
-    });
+    })
 
-    return NextResponse.redirect(
-      new URL("/dashboard?success=google_connected", request.url)
-    );
+    return NextResponse.redirect(new URL('/dashboard?success=google_connected', request.url))
   } catch (error) {
-    console.error("Google OAuth callback error:", error);
-    return NextResponse.redirect(
-      new URL("/dashboard?error=callback_error", request.url)
-    );
+    console.error('Google OAuth callback error:', error)
+    return NextResponse.redirect(new URL('/dashboard?error=callback_error', request.url))
   }
 }

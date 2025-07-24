@@ -3,9 +3,25 @@
 import { createClient } from '@/lib/supabase/server'
 import { type NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+interface HubspotPageBackup {
+  backup_date?: string
+  hubspot_page_id: string
+  name: string
+  url: string
+  html_title: string
+  meta_description: string
+  slug: string
+  state: string
+  created_at: string
+  updated_at: string
+  page_type: string
+  body_content: string
+}
 
 // This helper function gets an authenticated Google API client. It no longer needs to read any sheet IDs.
-async function getAuthenticatedGoogleClient (userId: string, supabase: any) {
+async function getAuthenticatedGoogleClient(userId: string, supabase: SupabaseClient) {
   const { data: userSettings, error } = await supabase
     .from('user_settings')
     .select('google_access_token, google_refresh_token')
@@ -23,7 +39,7 @@ async function getAuthenticatedGoogleClient (userId: string, supabase: any) {
   )
 
   oauth2Client.setCredentials({
-    refresh_token: userSettings.google_refresh_token
+    refresh_token: userSettings.google_refresh_token,
   })
 
   const { token: newAccessToken } = await oauth2Client.getAccessToken()
@@ -31,16 +47,13 @@ async function getAuthenticatedGoogleClient (userId: string, supabase: any) {
   if (newAccessToken && newAccessToken !== userSettings.google_access_token) {
     await supabase
       .from('user_settings')
-      .upsert(
-        { user_id: userId, google_access_token: newAccessToken },
-        { onConflict: 'user_id' }
-      )
+      .upsert({ user_id: userId, google_access_token: newAccessToken }, { onConflict: 'user_id' })
       .eq('user_id', userId)
   }
 
   oauth2Client.setCredentials({
     access_token: newAccessToken,
-    refresh_token: userSettings.google_refresh_token
+    refresh_token: userSettings.google_refresh_token,
   })
 
   return google.sheets({ version: 'v4', auth: oauth2Client })
@@ -52,10 +65,10 @@ const hubspotFieldMapping: { [key: string]: string } = {
   meta_description: 'metaDescription',
   slug: 'slug',
   state: 'currentState',
-  body_content: 'body'
+  body_content: 'body',
 }
 
-export async function POST (request: NextRequest) {
+export async function POST(request: NextRequest) {
   let newSheetUrl = ''
 
   try {
@@ -71,14 +84,11 @@ export async function POST (request: NextRequest) {
     const supabase = createClient()
     const {
       data: { user },
-      error: authError
+      error: authError,
     } = await supabase.auth.getUser()
 
     if (authError || !user || user.id !== userId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     const { data: targetVersionData, error: versionError } = await supabase
@@ -98,7 +108,7 @@ export async function POST (request: NextRequest) {
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-        hour12: true
+        hour12: true,
       })
       const newSpreadsheetTitle = `HubSpot_Reverted_Data - ${revertTimestamp}` // Use the name you requested
       const mainSheetTitle = 'Reverted Data'
@@ -107,16 +117,16 @@ export async function POST (request: NextRequest) {
       const createResponse = await sheets.spreadsheets.create({
         requestBody: {
           properties: {
-            title: newSpreadsheetTitle
+            title: newSpreadsheetTitle,
           },
           sheets: [
             {
               properties: {
-                title: mainSheetTitle
-              }
-            }
-          ]
-        }
+                title: mainSheetTitle,
+              },
+            },
+          ],
+        },
       })
 
       const newSpreadsheetId = createResponse.data.spreadsheetId
@@ -141,9 +151,10 @@ export async function POST (request: NextRequest) {
         'Created/Published At',
         'Updated At',
         'Content Type',
-        'Body Content'
+        'Body Content',
       ]
-      const sheetRows = targetVersionData.map((page: any) => [
+
+      const sheetRows = targetVersionData.map((page: HubspotPageBackup) => [
         page.backup_date || new Date(page.created_at).toISOString(),
         page.hubspot_page_id,
         page.name,
@@ -155,38 +166,36 @@ export async function POST (request: NextRequest) {
         page.created_at,
         page.updated_at,
         page.page_type,
-        page.body_content
+        page.body_content,
       ])
 
       await sheets.spreadsheets.values.update({
         spreadsheetId: newSpreadsheetId,
         range: `'${mainSheetTitle}'!A1`,
         valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [headers, ...sheetRows] }
+        requestBody: { values: [headers, ...sheetRows] },
       })
     } catch (sheetError) {
-      console.error(
-        'Failed to create or write to revert log sheet:',
-        sheetError
-      )
+      console.error('Failed to create or write to revert log sheet:', sheetError)
       newSheetUrl = ''
     }
     // --- END: MODIFIED LOGIC ---
 
     // The rest of the function (syncing and creating a snapshot) is unchanged.
-    const succeeded: any[] = []
-    const failed: any[] = []
+    const succeeded: { pageId: string; name: string; published: boolean }[] = []
+    interface FailedRevert {
+      pageId: string
+      name: string
+      error: string
+    }
+    const failed: FailedRevert[] = []
     for (const pageToRevert of targetVersionData) {
       const pageId = pageToRevert.hubspot_page_id
       const pageType = pageToRevert.page_type
-      const contentPayload: { [key: string]: any } = {}
+      const contentPayload: Record<string, string | number | boolean | null | undefined> = {}
       for (const key in hubspotFieldMapping) {
-        if (
-          key !== 'state' &&
-          pageToRevert[key as keyof typeof pageToRevert] !== undefined
-        ) {
-          contentPayload[hubspotFieldMapping[key]] =
-            pageToRevert[key as keyof typeof pageToRevert]
+        if (key !== 'state' && pageToRevert[key as keyof typeof pageToRevert] !== undefined) {
+          contentPayload[hubspotFieldMapping[key]] = pageToRevert[key as keyof typeof pageToRevert]
         }
       }
       const needsPublishing = pageToRevert.state === 'PUBLISHED'
@@ -200,9 +209,9 @@ export async function POST (request: NextRequest) {
             method: 'PATCH',
             headers: {
               Authorization: `Bearer ${hubspotToken}`,
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
             },
-            body: JSON.stringify(contentPayload)
+            body: JSON.stringify(contentPayload),
           })
           if (!res.ok) {
             const err = await res.json()
@@ -217,16 +226,16 @@ export async function POST (request: NextRequest) {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${hubspotToken}`,
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ action: 'schedule-publish' })
+            body: JSON.stringify({ action: 'schedule-publish' }),
           })
           if (res.status !== 204) {
             let errText = `HTTP ${res.status}`
             try {
               const err = await res.json()
               errText = err.message
-            } catch (e) {}
+            } catch {}
             throw new Error(`Publish failed: ${errText}`)
           }
           pageWasPublished = true
@@ -234,13 +243,13 @@ export async function POST (request: NextRequest) {
         succeeded.push({
           pageId,
           name: pageToRevert.name,
-          published: pageWasPublished
+          published: pageWasPublished,
         })
       } catch (error) {
         failed.push({
           pageId,
           name: pageToRevert.name,
-          error: error instanceof Error ? error.message : 'Revert action failed'
+          error: error instanceof Error ? error.message : 'Revert action failed',
         })
       }
     }
@@ -249,9 +258,12 @@ export async function POST (request: NextRequest) {
       const newSnapshotData = targetVersionData.map(page => ({
         ...page,
         backup_id: newRevertSnapshotId,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       }))
-      newSnapshotData.forEach(p => delete (p as any).id)
+      newSnapshotData.forEach(p => {
+        // Remove the 'id' property if present
+        delete (p as Partial<HubspotPageBackup> & { id?: string }).id
+      })
       await supabase.from('hubspot_page_backups').insert(newSnapshotData)
     }
 
@@ -260,12 +272,11 @@ export async function POST (request: NextRequest) {
       message: 'Revert process completed.',
       succeeded,
       failed,
-      revertSheetUrl: newSheetUrl
+      revertSheetUrl: newSheetUrl,
     })
   } catch (error) {
     console.error('Revert to version error:', error)
-    const errorMessage =
-      error instanceof Error ? error.message : 'An unknown error occurred.'
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.'
     return NextResponse.json(
       { success: false, error: `Failed to revert to version: ${errorMessage}` },
       { status: 500 }

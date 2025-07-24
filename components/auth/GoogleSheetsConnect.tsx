@@ -1,15 +1,28 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import { Loader2, ExternalLink, Plus, CheckCircle, AlertCircle, FileSpreadsheet } from "lucide-react"
-import type { User } from "@supabase/supabase-js"
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { useToast } from '@/hooks/use-toast'
+import {
+  Loader2,
+  ExternalLink,
+  Plus,
+  CheckCircle,
+  AlertCircle,
+  FileSpreadsheet,
+} from 'lucide-react'
+import type { User } from '@supabase/supabase-js'
 
 interface GoogleSheetsConnectProps {
   user: User
@@ -24,11 +37,15 @@ interface GoogleSheet {
   createdTime: string
 }
 
-export default function GoogleSheetsConnect({ user, userSettings, onConnectionUpdate }: GoogleSheetsConnectProps) {
+export default function GoogleSheetsConnect({
+  user,
+  userSettings,
+  onConnectionUpdate,
+}: GoogleSheetsConnectProps) {
   const [isConnected, setIsConnected] = useState(!!userSettings?.google_access_token)
   const [sheets, setSheets] = useState<GoogleSheet[]>([])
-  const [selectedSheetId, setSelectedSheetId] = useState(userSettings?.selected_sheet_id || "")
-  const [newSheetName, setNewSheetName] = useState("")
+  const [selectedSheetId, setSelectedSheetId] = useState(userSettings?.selected_sheet_id || '')
+  const [newSheetName, setNewSheetName] = useState('')
   const [loading, setLoading] = useState(false)
   const [creating, setCreating] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -36,7 +53,7 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
 
   useEffect(() => {
     setIsConnected(!!userSettings?.google_access_token)
-    setSelectedSheetId(userSettings?.selected_sheet_id || "")
+    setSelectedSheetId(userSettings?.selected_sheet_id || '')
 
     if (userSettings?.google_access_token) {
       loadSheets()
@@ -46,9 +63,9 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
   const connectGoogleSheets = async () => {
     setLoading(true)
     try {
-      const response = await fetch("/api/google/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/google/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id }),
       })
 
@@ -57,14 +74,14 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
         // Redirect to Google OAuth
         window.location.href = data.authUrl
       } else {
-        throw new Error(data.error || "Failed to initiate Google OAuth")
+        throw new Error(data.error || 'Failed to initiate Google OAuth')
       }
     } catch (error) {
-      console.error("Google OAuth error:", error)
+      console.error('Google OAuth error:', error)
       toast({
-        title: "Connection Failed",
-        description: error instanceof Error ? error.message : "Failed to connect to Google Sheets",
-        variant: "destructive",
+        title: 'Connection Failed',
+        description: error instanceof Error ? error.message : 'Failed to connect to Google Sheets',
+        variant: 'destructive',
       })
     }
     setLoading(false)
@@ -72,23 +89,23 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
 
   const loadSheets = async () => {
     try {
-      const response = await fetch("/api/google/sheets", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/google/sheets', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
       })
 
       const data = await response.json()
       if (data.success) {
         setSheets(data.sheets || [])
       } else {
-        throw new Error(data.error || "Failed to load sheets")
+        throw new Error(data.error || 'Failed to load sheets')
       }
     } catch (error) {
-      console.error("Error loading sheets:", error)
+      console.error('Error loading sheets:', error)
       toast({
-        title: "Error Loading Sheets",
-        description: error instanceof Error ? error.message : "Failed to load Google Sheets",
-        variant: "destructive",
+        title: 'Error Loading Sheets',
+        description: error instanceof Error ? error.message : 'Failed to load Google Sheets',
+        variant: 'destructive',
       })
     }
   }
@@ -96,18 +113,18 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
   const createNewSheet = async () => {
     if (!newSheetName.trim()) {
       toast({
-        title: "Sheet Name Required",
-        description: "Please enter a name for the new sheet",
-        variant: "destructive",
+        title: 'Sheet Name Required',
+        description: 'Please enter a name for the new sheet',
+        variant: 'destructive',
       })
       return
     }
 
     setCreating(true)
     try {
-      const response = await fetch("/api/google/sheets/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/google/sheets/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: newSheetName,
           userId: user.id,
@@ -119,24 +136,24 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
         const newSheet = data.sheet
         setSheets([newSheet, ...sheets])
         setSelectedSheetId(newSheet.id)
-        setNewSheetName("")
+        setNewSheetName('')
 
         toast({
-          title: "Sheet Created! 📊",
+          title: 'Sheet Created! 📊',
           description: `Created "${newSheet.name}" with backup headers`,
         })
 
         // Auto-save the new sheet selection
         await saveSheetSelection(newSheet.id)
       } else {
-        throw new Error(data.error || "Failed to create sheet")
+        throw new Error(data.error || 'Failed to create sheet')
       }
     } catch (error) {
-      console.error("Error creating sheet:", error)
+      console.error('Error creating sheet:', error)
       toast({
-        title: "Creation Failed",
-        description: error instanceof Error ? error.message : "Failed to create Google Sheet",
-        variant: "destructive",
+        title: 'Creation Failed',
+        description: error instanceof Error ? error.message : 'Failed to create Google Sheet',
+        variant: 'destructive',
       })
     }
     setCreating(false)
@@ -146,18 +163,18 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
     const targetSheetId = sheetId || selectedSheetId
     if (!targetSheetId) {
       toast({
-        title: "No Sheet Selected",
-        description: "Please select a Google Sheet for backups",
-        variant: "destructive",
+        title: 'No Sheet Selected',
+        description: 'Please select a Google Sheet for backups',
+        variant: 'destructive',
       })
       return
     }
 
     setSaving(true)
     try {
-      const response = await fetch("/api/user/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/user/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           selected_sheet_id: targetSheetId,
         }),
@@ -167,18 +184,18 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
       if (data.success) {
         onConnectionUpdate?.(true, targetSheetId)
         toast({
-          title: "Sheet Selected! ✅",
-          description: "Google Sheet has been configured for backups",
+          title: 'Sheet Selected! ✅',
+          description: 'Google Sheet has been configured for backups',
         })
       } else {
-        throw new Error(data.error || "Failed to save sheet selection")
+        throw new Error(data.error || 'Failed to save sheet selection')
       }
     } catch (error) {
-      console.error("Error saving sheet selection:", error)
+      console.error('Error saving sheet selection:', error)
       toast({
-        title: "Save Failed",
-        description: error instanceof Error ? error.message : "Failed to save sheet selection",
-        variant: "destructive",
+        title: 'Save Failed',
+        description: error instanceof Error ? error.message : 'Failed to save sheet selection',
+        variant: 'destructive',
       })
     }
     setSaving(false)
@@ -186,9 +203,9 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
 
   const disconnect = async () => {
     try {
-      const response = await fetch("/api/user/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/user/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           google_access_token: null,
           google_refresh_token: null,
@@ -201,20 +218,21 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
       if (data.success) {
         setIsConnected(false)
         setSheets([])
-        setSelectedSheetId("")
+        setSelectedSheetId('')
         onConnectionUpdate?.(false)
         toast({
-          title: "Disconnected",
-          description: "Google Sheets connection has been removed",
+          title: 'Disconnected',
+          description: 'Google Sheets connection has been removed',
         })
       } else {
-        throw new Error(data.error || "Failed to disconnect")
+        throw new Error(data.error || 'Failed to disconnect')
       }
     } catch (error) {
+      console.error('Error disconnecting Google Sheets:', error)
       toast({
-        title: "Error",
-        description: "Failed to disconnect Google Sheets",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to disconnect Google Sheets',
+        variant: 'destructive',
       })
     }
   }
@@ -232,7 +250,7 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-accent border border-blue-200 rounded-lg p-4">
             <h4 className="font-medium text-blue-900 mb-2">What you'll get:</h4>
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• Automatic backup of HubSpot pages to Google Sheets</li>
@@ -274,7 +292,7 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
               <CheckCircle className="h-5 w-5 text-green-600" />
               <div>
                 <h3 className="font-medium">Google Sheets Connected</h3>
-                <p className="text-sm text-gray-600">Ready to backup your HubSpot data</p>
+                <p className="text-sm text-muted-foreground">Ready to backup your HubSpot data</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -291,7 +309,9 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
       <Card>
         <CardHeader>
           <CardTitle>Select Backup Sheet</CardTitle>
-          <CardDescription>Choose an existing sheet or create a new one for your HubSpot backups</CardDescription>
+          <CardDescription>
+            Choose an existing sheet or create a new one for your HubSpot backups
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Existing Sheets */}
@@ -304,7 +324,7 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
                     <SelectValue placeholder="Choose a Google Sheet..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {sheets.map((sheet) => (
+                    {sheets.map(sheet => (
                       <SelectItem key={sheet.id} value={sheet.id}>
                         <div className="flex items-center justify-between w-full">
                           <span>{sheet.name}</span>
@@ -317,7 +337,7 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
                   </SelectContent>
                 </Select>
                 <Button onClick={() => saveSheetSelection()} disabled={!selectedSheetId || saving}>
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
                 </Button>
               </div>
             </div>
@@ -330,7 +350,7 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
               <Input
                 placeholder="Enter sheet name (e.g., HubSpot Backup 2024)"
                 value={newSheetName}
-                onChange={(e) => setNewSheetName(e.target.value)}
+                onChange={e => setNewSheetName(e.target.value)}
                 className="flex-1"
               />
               <Button onClick={createNewSheet} disabled={creating || !newSheetName.trim()}>
@@ -355,12 +375,12 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <span className="text-green-800 font-medium">
-                  Selected: {sheets.find((s) => s.id === selectedSheetId)?.name || selectedSheetId}
+                  Selected: {sheets.find(s => s.id === selectedSheetId)?.name || selectedSheetId}
                 </span>
-                {sheets.find((s) => s.id === selectedSheetId)?.url && (
+                {sheets.find(s => s.id === selectedSheetId)?.url && (
                   <Button variant="ghost" size="sm" asChild>
                     <a
-                      href={sheets.find((s) => s.id === selectedSheetId)?.url}
+                      href={sheets.find(s => s.id === selectedSheetId)?.url}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -377,7 +397,9 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 text-amber-600" />
-                <span className="text-amber-800">No Google Sheets found. Create a new one to get started.</span>
+                <span className="text-amber-800">
+                  No Google Sheets found. Create a new one to get started.
+                </span>
               </div>
             </div>
           )}
@@ -388,22 +410,25 @@ export default function GoogleSheetsConnect({ user, userSettings, onConnectionUp
       <Card>
         <CardHeader>
           <CardTitle>Backup Format</CardTitle>
-          <CardDescription>How your HubSpot data will be organized in Google Sheets</CardDescription>
+          <CardDescription>
+            How your HubSpot data will be organized in Google Sheets
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-              <div className="font-medium bg-gray-100 p-2 rounded">Page ID</div>
-              <div className="font-medium bg-gray-100 p-2 rounded">Page Name</div>
-              <div className="font-medium bg-gray-100 p-2 rounded">URL</div>
-              <div className="font-medium bg-gray-100 p-2 rounded">Title</div>
-              <div className="bg-gray-50 p-2 rounded text-gray-600">12345</div>
-              <div className="bg-gray-50 p-2 rounded text-gray-600">Home Page</div>
-              <div className="bg-gray-50 p-2 rounded text-gray-600">example.com</div>
-              <div className="bg-gray-50 p-2 rounded text-gray-600">Welcome</div>
+              <div className="font-medium bg-muted p-2 rounded">Page ID</div>
+              <div className="font-medium bg-muted p-2 rounded">Page Name</div>
+              <div className="font-medium bg-muted p-2 rounded">URL</div>
+              <div className="font-medium bg-muted p-2 rounded">Title</div>
+              <div className="bg-popover p-2 rounded text-muted-foreground">12345</div>
+              <div className="bg-popover p-2 rounded text-muted-foreground">Home Page</div>
+              <div className="bg-popover p-2 rounded text-muted-foreground">example.com</div>
+              <div className="bg-popover p-2 rounded text-muted-foreground">Welcome</div>
             </div>
             <p className="text-xs text-gray-500">
-              Each backup creates a new row with timestamp, and updates are tracked with version history.
+              Each backup creates a new row with timestamp, and updates are tracked with version
+              history.
             </p>
           </div>
         </CardContent>
