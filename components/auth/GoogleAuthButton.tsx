@@ -1,27 +1,27 @@
-"use client"
+'use client'
 
-import { Button } from "@/components/ui/button"
-import { createClient } from "@/lib/supabase/client"
-import { useToast } from "@/hooks/use-toast"
+import { Button } from '@/components/ui/button'
+import { createClient } from '@/lib/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 
 export default function GoogleAuthButton() {
   const supabase = createClient()
   const { toast } = useToast()
 
   const handleGoogleSignIn = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
     })
 
     if (error) {
-      console.error("Google OAuth Error:", error.message)
+      console.error('Google OAuth Error:', error.message)
       toast({
-        title: "Google Sign-In Failed",
+        title: 'Google Sign-In Failed',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       })
     }
   }
@@ -30,7 +30,7 @@ export default function GoogleAuthButton() {
     <Button
       type="button"
       variant="outline"
-      className="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium shadow-sm transition flex items-center justify-center gap-2"
+      className="w-full bg-background border border-gray-300 hover:bg-popover text-gray-700 font-medium shadow-sm transition flex items-center justify-center gap-2"
       onClick={handleGoogleSignIn}
     >
       <img

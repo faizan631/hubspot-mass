@@ -1,41 +1,50 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { useState } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useToast } from "@/hooks/use-toast"
-import { Mail, Lock, User, ArrowRight, Loader2, Zap, CheckCircle, AlertTriangle } from "lucide-react"
-import GoogleAuthButton from "./GoogleAuthButton"
+import type React from 'react'
+import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useToast } from '@/hooks/use-toast'
+import {
+  Mail,
+  Lock,
+  User,
+  ArrowRight,
+  Loader2,
+  Zap,
+  CheckCircle,
+  AlertTriangle,
+} from 'lucide-react'
+import GoogleAuthButton from './GoogleAuthButton'
 
 export const Divider = () => (
   <div className="flex items-center w-full my-4">
-    <div className="flex-grow h-px bg-gray-200 dark:bg-gray-700" />
-    <span className="mx-4 px-3 font-medium text-gray-900 bg-white dark:text-white dark:bg-gray-900">
+    <div className="flex-grow h-px bg-muted/50 dark:bg-gray-700" />
+    <span className="mx-4 px-3 font-medium text-gray-900 bg-background dark:text-foreground dark:bg-gray-900">
       or
     </span>
-    <div className="flex-grow h-px bg-gray-200 dark:bg-gray-700" />
+    <div className="flex-grow h-px bg-muted/50 dark:bg-gray-700" />
   </div>
 )
 
 export const VerticalDivider = () => (
   <div className="flex flex-col items-center justify-center mx-4">
-    <div className="h-full w-px bg-gray-200 dark:bg-gray-700" />
-    <span className="my-2 px-2 font-medium text-gray-900 bg-white dark:text-white dark:bg-gray-900 rotate-90">
+    <div className="h-full w-px bg-muted/50 dark:bg-gray-700" />
+    <span className="my-2 px-2 font-medium text-gray-900 bg-background dark:text-foreground dark:bg-gray-900">
       or
     </span>
-    <div className="h-full w-px bg-gray-200 dark:bg-gray-700" />
+    <div className="h-full w-px bg-muted/50 dark:bg-gray-700" />
   </div>
 )
 
 export default function AuthForm() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [name, setName] = useState("")
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const [magicLinkSent, setMagicLinkSent] = useState(false)
   const { toast } = useToast()
@@ -53,7 +62,7 @@ export default function AuthForm() {
       // Use the callback URL that matches your page structure
       const redirectTo = `${window.location.origin}/auth/callback`
 
-      console.log("Sending magic link with redirect:", redirectTo)
+      console.log('Sending magic link with redirect:', redirectTo)
 
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -64,21 +73,22 @@ export default function AuthForm() {
       })
 
       if (error) {
-        console.error("Magic link error:", error)
+        console.error('Magic link error:', error)
         throw error
       }
 
       setMagicLinkSent(true)
       toast({
-        title: "Magic Link Sent! ✨",
+        title: 'Magic Link Sent! ✨',
         description: `Check your email at ${email} for a secure login link`,
       })
     } catch (error) {
-      console.error("Magic link error:", error)
+      console.error('Magic link error:', error)
       toast({
-        title: "Failed to Send Magic Link",
-        description: error instanceof Error ? error.message : "Please check your email and try again",
-        variant: "destructive",
+        title: 'Failed to Send Magic Link',
+        description:
+          error instanceof Error ? error.message : 'Please check your email and try again',
+        variant: 'destructive',
       })
     }
     setLoading(false)
@@ -101,31 +111,31 @@ export default function AuthForm() {
       })
 
       if (error) {
-        console.error("Sign up error:", error)
+        console.error('Sign up error:', error)
         throw error
       }
 
-      console.log("Sign up result:", { user: data.user, session: data.session })
+      console.log('Sign up result:', { user: data.user, session: data.session })
 
       if (data.user && !data.user.email_confirmed_at) {
         toast({
-          title: "Check your email! 📧",
+          title: 'Check your email! 📧',
           description: `We sent a confirmation link to ${email}. Click it to activate your account.`,
         })
       } else if (data.user && data.session) {
         toast({
-          title: "Welcome to Smuves! 🎉",
-          description: "Your account has been created successfully.",
+          title: 'Welcome to Smuves! 🎉',
+          description: 'Your account has been created successfully.',
         })
         // Redirect to dashboard if immediately signed in
-        window.location.href = "/dashboard"
+        window.location.href = '/dashboard'
       }
     } catch (error) {
-      console.error("Sign up error:", error)
+      console.error('Sign up error:', error)
       toast({
-        title: "Sign Up Failed",
-        description: error instanceof Error ? error.message : "An error occurred during sign up",
-        variant: "destructive",
+        title: 'Sign Up Failed',
+        description: error instanceof Error ? error.message : 'An error occurred during sign up',
+        variant: 'destructive',
       })
     }
     setLoading(false)
@@ -142,25 +152,25 @@ export default function AuthForm() {
       })
 
       if (error) {
-        console.error("Sign in error:", error)
+        console.error('Sign in error:', error)
         throw error
       }
 
-      console.log("Sign in successful:", data.user?.email)
+      console.log('Sign in successful:', data.user?.email)
 
       toast({
-        title: "Welcome back! 👋",
+        title: 'Welcome back! 👋',
         description: "You've been signed in successfully.",
       })
 
       // Redirect to dashboard
-      window.location.href = "/dashboard"
+      window.location.href = '/dashboard'
     } catch (error) {
-      console.error("Sign in error:", error)
+      console.error('Sign in error:', error)
       toast({
-        title: "Sign In Failed",
-        description: error instanceof Error ? error.message : "Invalid email or password",
-        variant: "destructive",
+        title: 'Sign In Failed',
+        description: error instanceof Error ? error.message : 'Invalid email or password',
+        variant: 'destructive',
       })
     }
     setLoading(false)
@@ -183,15 +193,15 @@ export default function AuthForm() {
       if (error) throw error
 
       toast({
-        title: "Magic Link Resent! ✨",
-        description: "Check your email again for the new login link",
+        title: 'Magic Link Resent! ✨',
+        description: 'Check your email again for the new login link',
       })
     } catch (error) {
-      console.error("Resend error:", error)
+      console.error('Resend error:', error)
       toast({
-        title: "Failed to Resend",
-        description: "Please try again in a moment",
-        variant: "destructive",
+        title: 'Failed to Resend',
+        description: 'Please try again in a moment',
+        variant: 'destructive',
       })
     }
     setLoading(false)
@@ -208,12 +218,12 @@ export default function AuthForm() {
           <CardDescription>We sent a magic link to {email}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-900 mb-2">What's next?</h4>
+          <div className="bg-accent border border-blue-200 rounded-lg p-4">
+            <h4 className="font-medium text-blue-900 mb-2">What&#39;s next?</h4>
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• Check your email inbox (and spam folder)</li>
               <li>• Click the secure login link</li>
-              <li>• You'll be automatically signed in</li>
+              <li>• You&#39;ll be automatically signed in</li>
             </ul>
           </div>
 
@@ -222,15 +232,20 @@ export default function AuthForm() {
               variant="outline"
               onClick={() => {
                 setMagicLinkSent(false)
-                setEmail("")
-                setName("")
+                setEmail('')
+                setName('')
               }}
               className="flex-1"
             >
               Use Different Email
             </Button>
-            <Button variant="outline" onClick={resendMagicLink} disabled={loading} className="flex-1 bg-transparent">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Resend Link"}
+            <Button
+              variant="outline"
+              onClick={resendMagicLink}
+              disabled={loading}
+              className="flex-1 bg-transparent"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Resend Link'}
             </Button>
           </div>
 
@@ -241,7 +256,7 @@ export default function AuthForm() {
                 <p className="text-xs text-amber-800 font-medium mb-1">Important:</p>
                 <ul className="text-xs text-amber-700 space-y-1">
                   <li>• Only click the most recent magic link</li>
-                  <li>• Don't reuse old email links (they expire)</li>
+                  <li>• Don&#39;t reuse old email links (they expire)</li>
                   <li>• Close other login tabs to avoid conflicts</li>
                 </ul>
               </div>
@@ -254,12 +269,18 @@ export default function AuthForm() {
 
   return (
     <div className="flex justify-center items-center w-full min-h-[100dvh] bg-background overflow-auto px-2 sm:px-4">
-      <Card className="w-full max-w-lg sm:max-w-xl mx-auto" style={{ maxHeight: 'calc(100dvh - 32px)' }}>
+      <Card
+        className="w-full max-w-lg sm:max-w-xl mx-auto"
+        style={{ maxHeight: 'calc(100dvh - 32px)' }}
+      >
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Get Started Free</CardTitle>
           <CardDescription>Create your account or sign in to continue</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6 pb-10 overflow-y-auto" style={{ maxHeight: 'calc(100dvh - 160px)' }}>
+        <CardContent
+          className="space-y-6 pb-10 overflow-y-auto"
+          style={{ maxHeight: 'calc(100dvh - 160px)' }}
+        >
           <Tabs defaultValue="magic" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="magic" className="text-xs">
@@ -280,7 +301,7 @@ export default function AuthForm() {
                   <span className="font-medium text-purple-900">Recommended</span>
                 </div>
                 <p className="text-sm text-purple-800">
-                  No password needed! We'll send you a secure login link via email.
+                  No password needed! We&#39;ll send you a secure login link via email.
                 </p>
               </div>
 
@@ -288,13 +309,13 @@ export default function AuthForm() {
                 <div className="space-y-2">
                   <Label htmlFor="magic-name">Full Name (Optional)</Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 h-4 w-4" />
                     <Input
                       id="magic-name"
                       type="text"
                       placeholder="Enter your full name"
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={e => setName(e.target.value)}
                       className="pl-10"
                     />
                   </div>
@@ -303,13 +324,13 @@ export default function AuthForm() {
                 <div className="space-y-2">
                   <Label htmlFor="magic-email">Email Address</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 h-4 w-4" />
                     <Input
                       id="magic-email"
                       type="email"
                       placeholder="Enter your email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={e => setEmail(e.target.value)}
                       className="pl-10"
                       required
                     />
@@ -339,13 +360,13 @@ export default function AuthForm() {
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 h-4 w-4" />
                     <Input
                       id="name"
                       type="text"
                       placeholder="Enter your full name"
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={e => setName(e.target.value)}
                       className="pl-10"
                       required
                     />
@@ -355,13 +376,13 @@ export default function AuthForm() {
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 h-4 w-4" />
                     <Input
                       id="signup-email"
                       type="email"
                       placeholder="Enter your email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={e => setEmail(e.target.value)}
                       className="pl-10"
                       required
                     />
@@ -371,13 +392,13 @@ export default function AuthForm() {
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 h-4 w-4" />
                     <Input
                       id="signup-password"
                       type="password"
                       placeholder="Create a password (min 6 characters)"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={e => setPassword(e.target.value)}
                       className="pl-10"
                       required
                       minLength={6}
@@ -408,13 +429,13 @@ export default function AuthForm() {
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 h-4 w-4" />
                     <Input
                       id="signin-email"
                       type="email"
                       placeholder="Enter your email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={e => setEmail(e.target.value)}
                       className="pl-10"
                       required
                     />
@@ -424,13 +445,13 @@ export default function AuthForm() {
                 <div className="space-y-2">
                   <Label htmlFor="signin-password">Password</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 h-4 w-4" />
                     <Input
                       id="signin-password"
                       type="password"
                       placeholder="Enter your password"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={e => setPassword(e.target.value)}
                       className="pl-10"
                       required
                     />
@@ -457,7 +478,7 @@ export default function AuthForm() {
           </Tabs>
 
           <div className="mt-6 text-center text-xs text-gray-500">
-            By creating an account, you agree to our{" "}
+            By creating an account, you agree to our{' '}
             <a
               href="https://www.smuves.com/terms-of-use"
               target="_blank"
@@ -465,8 +486,8 @@ export default function AuthForm() {
               className="font-bold hover:text-primary"
             >
               Terms of Service
-            </a>
-            {" "}and{" "}
+            </a>{' '}
+            and{' '}
             <a
               href="https://www.smuves.com/privacy-policy"
               target="_blank"

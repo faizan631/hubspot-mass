@@ -1,17 +1,14 @@
-"use client";
+'use client'
 
-import Link from "next/link";
-import { useTheme } from "next-themes";
-import { usePathname } from "next/navigation";
-import { updateUserTheme } from "@/app/actions/userActions"; // 1. IMPORT THE ACTION
-import { useToast } from "@/hooks/use-toast";
+import Link from 'next/link'
+import { useTheme } from 'next-themes'
+import { usePathname } from 'next/navigation'
 
-// ... (keep all your other imports)
 import {
   Menu,
   LogOut,
   PanelLeftClose,
-  Globe,
+  // Globe,
   User,
   CreditCard,
   Settings,
@@ -20,7 +17,7 @@ import {
   Sun,
   Moon,
   Laptop,
-  AlertCircle,
+  // AlertCircle,
   FileText,
   ListChecks,
   LayoutList,
@@ -30,13 +27,17 @@ import {
   Users,
   Plug,
   ArrowRightLeft,
-} from "lucide-react";
+  PanelRightClose,
+  Bell, // <-- 1. IMPORTED BELL ICON
+  HelpCircle, // <-- 2. IMPORTED HELP ICON
+} from 'lucide-react'
 
-import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+// import { Input } from '@/components/ui/input'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,45 +48,32 @@ import {
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu'
 
 function getTitleFromPathname(pathname: string): string {
-  const parts = pathname.split("/").filter(Boolean);
-  if (parts.length === 0) return "Dashboard";
-  const lastPart = parts[parts.length - 1];
-  return lastPart.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  const parts = pathname.split('/').filter(Boolean)
+  if (parts.length === 0) return 'Dashboard'
+  const lastPart = parts[parts.length - 1]
+  return lastPart.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
 }
 
 interface NavbarProps {
-  onToggleSidebar: () => void;
-  onToggleMobileSidebar: () => void;
+  isCollapsed: boolean
+  onToggleSidebar: () => void
+  onToggleMobileSidebar: () => void
 }
 
 export default function Navbar({
+  isCollapsed,
   onToggleSidebar,
   onToggleMobileSidebar,
 }: NavbarProps) {
-  const pathname = usePathname();
-  const pageTitle = getTitleFromPathname(pathname);
-  const { setTheme } = useTheme();
-  const { toast } = useToast();
-
-  const handleThemeChange = async (newTheme: "light" | "dark" | "system") => {
-    setTheme(newTheme); // Update UI immediately
-    try {
-      await updateUserTheme(newTheme); // Save to DB in the background
-    } catch (error) {
-      toast({
-        title: "Error Saving Theme",
-        description: "Your theme preference could not be saved.",
-        variant: "destructive",
-      });
-    }
-  };
+  const pathname = usePathname()
+  const pageTitle = getTitleFromPathname(pathname)
+  const { setTheme } = useTheme()
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 lg:px-8">
-      {/* ... (keep the rest of your JSX the same until the theme switcher) ... */}
       <Button
         variant="ghost"
         size="icon"
@@ -95,46 +83,56 @@ export default function Navbar({
         <Menu className="h-6 w-6" />
         <span className="sr-only">Toggle mobile menu</span>
       </Button>
+
       <Button
         variant="ghost"
         size="icon"
         className="hidden shrink-0 lg:flex"
         onClick={onToggleSidebar}
       >
-        <PanelLeftClose className="h-6 w-6" />
-        <span className="sr-only">Toggle sidebar</span>
+        {isCollapsed ? (
+          <PanelRightClose className="h-6 w-6" />
+        ) : (
+          <PanelLeftClose className="h-6 w-6" />
+        )}
       </Button>
+
       <div className="flex-1">
         <h1 className="text-xl font-semibold text-foreground">{pageTitle}</h1>
       </div>
+
       <div className="flex items-center justify-end gap-2 md:gap-4">
-        <div className="relative hidden w-full max-w-sm md:block">
-          <Input
-            type="search"
-            placeholder="Search..."
-            className="w-full rounded-lg bg-secondary pl-8"
-          />
-        </div>
+        {/* Support Link */}
+        <Link href="/dashboard/help" title="Help">
+          <Button variant="ghost" size="icon">
+            <HelpCircle className="h-5 w-5" />
+            <span className="sr-only">Help</span>
+          </Button>
+        </Link>
+
+        {/* Notifications Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Globe className="h-5 w-5" />
+            <Button variant="ghost" size="icon">
+              <Bell className="h-5 w-5" />
+              <span className="sr-only">Notifications</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>English</DropdownMenuItem>
-            <DropdownMenuItem>اردو (Urdu)</DropdownMenuItem>
-            <DropdownMenuItem>Español</DropdownMenuItem>
+            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              No new notifications
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">
               <Avatar className="h-9 w-9">
-                <AvatarImage
-                  src="https://github.com/shadcn.png"
-                  alt="@shadcn"
-                />
+                <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
                 <AvatarFallback>CN</AvatarFallback>
               </Avatar>
             </Button>
@@ -142,39 +140,47 @@ export default function Navbar({
           <DropdownMenuContent align="end" className="w-64">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
+
             <Link href="/dashboard/profile">
               <DropdownMenuItem>
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
             </Link>
-            <Link href="/dashboard/billing">
+
+            <Link aria-disabled href="/dashboard/billing">
               <DropdownMenuItem>
                 <CreditCard className="mr-2 h-4 w-4" />
                 <span>Upgrade Plan</span>
+                <Badge variant="outline" className="ml-auto text-xs">
+                  Coming Soon
+                </Badge>
               </DropdownMenuItem>
             </Link>
+
             <Link href="/dashboard/referrals">
               <DropdownMenuItem>
                 <Gift className="mr-2 h-4 w-4" />
                 <span>Referrals</span>
                 <Badge variant="outline" className="ml-auto text-xs">
-                  Soon
+                  Coming Soon
                 </Badge>
               </DropdownMenuItem>
             </Link>
+
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
-                <Link href="/dashboard/connect">
+                <Link href="/dashboard/integrations">
                   <DropdownMenuItem>
                     <Plug className="mr-2 h-4 w-4" />
                     <span>Integrations</span>
                   </DropdownMenuItem>
                 </Link>
+
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
                     <ListChecks className="mr-2 h-4 w-4" />
@@ -193,7 +199,10 @@ export default function Navbar({
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                       <LayoutList className="mr-2 h-4 w-4" />
-                      Blogs <Badge className="ml-auto text-xs">Soon</Badge>
+                      Blogs{' '}
+                      <Badge variant="outline" className="ml-auto text-xs">
+                        Coming Soon
+                      </Badge>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                       <BookOpen className="mr-2 h-4 w-4" />
@@ -201,58 +210,60 @@ export default function Navbar({
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                       <Users className="mr-2 h-4 w-4" />
-                      Authors <Badge className="ml-auto text-xs">Soon</Badge>
+                      Authors{' '}
+                      <Badge variant="outline" className="ml-auto text-xs">
+                        Coming Soon
+                      </Badge>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                       <Tags className="mr-2 h-4 w-4" />
-                      Tags <Badge className="ml-auto text-xs">Soon</Badge>
+                      Tags{' '}
+                      <Badge variant="outline" className="ml-auto text-xs">
+                        Coming Soon
+                      </Badge>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                       <Database className="mr-2 h-4 w-4" />
-                      HubDB Tables{" "}
-                      <Badge className="ml-auto text-xs">Soon</Badge>
+                      HubDB Tables{' '}
+                      <Badge variant="outline" className="ml-auto text-xs">
+                        Coming Soon
+                      </Badge>
                     </DropdownMenuItem>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
-                <Link href="/dashboard/logs">
-                  <DropdownMenuItem>
-                    <AlertCircle className="mr-2 h-4 w-4" />
-                    <span>Logs</span>
-                  </DropdownMenuItem>
-                </Link>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
+
             <DropdownMenuSeparator />
 
-            {/* --- THIS IS THE MODIFIED PART --- */}
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <Paintbrush className="mr-2 h-4 w-4" />
                 <span>Theme</span>
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
-                <DropdownMenuItem onClick={() => handleThemeChange("light")}>
+                <DropdownMenuItem onClick={() => setTheme('light')}>
                   <Sun className="mr-2 h-4 w-4" />
                   Light
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleThemeChange("dark")}>
+                <DropdownMenuItem onClick={() => setTheme('dark')}>
                   <Moon className="mr-2 h-4 w-4" />
                   Dark
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleThemeChange("system")}>
+                <DropdownMenuItem onClick={() => setTheme('system')}>
                   <Laptop className="mr-2 h-4 w-4" />
                   System
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
-            {/* --- END OF MODIFICATION --- */}
 
             <DropdownMenuSeparator />
+
             <DropdownMenuItem
               onClick={async () => {
-                const supabase = createClient();
-                await supabase.auth.signOut();
-                window.location.href = "/auth";
+                const supabase = createClient()
+                await supabase.auth.signOut()
+                window.location.href = '/auth'
               }}
               className="text-red-500 focus:text-red-500 focus:bg-red-50"
             >
@@ -262,5 +273,5 @@ export default function Navbar({
         </DropdownMenu>
       </div>
     </header>
-  );
+  )
 }

@@ -1,14 +1,20 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/hooks/use-toast"
-import { Edit3, Save, RefreshCw } from "lucide-react"
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useToast } from '@/hooks/use-toast'
+import { Edit3, Save, RefreshCw } from 'lucide-react'
 
 interface PageEditorProps {
   userId: string
@@ -28,7 +34,7 @@ interface PageData {
 
 export default function PageEditor({ userId, hubspotToken, sheetId }: PageEditorProps) {
   const [pages, setPages] = useState<PageData[]>([])
-  const [selectedPageId, setSelectedPageId] = useState("")
+  const [selectedPageId, setSelectedPageId] = useState('')
   const [pageData, setPageData] = useState<PageData | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -50,9 +56,9 @@ export default function PageEditor({ userId, hubspotToken, sheetId }: PageEditor
   const fetchPages = async () => {
     setLoading(true)
     try {
-      const response = await fetch("/api/hubspot/pages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/hubspot/pages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: hubspotToken }),
       })
 
@@ -63,11 +69,11 @@ export default function PageEditor({ userId, hubspotToken, sheetId }: PageEditor
         throw new Error(data.error)
       }
     } catch (error) {
-      console.error("Failed to fetch pages:", error)
+      console.error('Failed to fetch pages:', error)
       toast({
-        title: "Error",
-        description: "Failed to fetch pages",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to fetch pages',
+        variant: 'destructive',
       })
     }
     setLoading(false)
@@ -79,31 +85,31 @@ export default function PageEditor({ userId, hubspotToken, sheetId }: PageEditor
       const response = await fetch(`https://api.hubapi.com/cms/v3/pages/${pageId}`, {
         headers: {
           Authorization: `Bearer ${hubspotToken}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
       })
 
       if (!response.ok) {
-        throw new Error("Failed to fetch page details")
+        throw new Error('Failed to fetch page details')
       }
 
       const page = await response.json()
       setPageData({
         id: page.id,
-        name: page.name || "",
-        slug: page.slug || "",
-        htmlTitle: page.htmlTitle || "",
-        metaDescription: page.metaDescription || "",
-        status: page.currentState || "PUBLISHED",
-        language: page.language || "en",
+        name: page.name || '',
+        slug: page.slug || '',
+        htmlTitle: page.htmlTitle || '',
+        metaDescription: page.metaDescription || '',
+        status: page.currentState || 'PUBLISHED',
+        language: page.language || 'en',
       })
       setHasChanges(false)
     } catch (error) {
-      console.error("Failed to fetch page details:", error)
+      console.error('Failed to fetch page details:', error)
       toast({
-        title: "Error",
-        description: "Failed to fetch page details",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to fetch page details',
+        variant: 'destructive',
       })
     }
     setLoading(false)
@@ -128,9 +134,9 @@ export default function PageEditor({ userId, hubspotToken, sheetId }: PageEditor
         metaDescription: pageData.metaDescription,
       }
 
-      const response = await fetch("/api/pages/edit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/pages/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId,
           pageId: pageData.id,
@@ -143,7 +149,7 @@ export default function PageEditor({ userId, hubspotToken, sheetId }: PageEditor
       const data = await response.json()
       if (data.success) {
         toast({
-          title: "Page Updated! ✅",
+          title: 'Page Updated! ✅',
           description: data.message,
         })
         setHasChanges(false)
@@ -151,11 +157,11 @@ export default function PageEditor({ userId, hubspotToken, sheetId }: PageEditor
         throw new Error(data.error)
       }
     } catch (error) {
-      console.error("Save error:", error)
+      console.error('Save error:', error)
       toast({
-        title: "Save Failed",
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
+        title: 'Save Failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
       })
     }
     setSaving(false)
@@ -179,7 +185,7 @@ export default function PageEditor({ userId, hubspotToken, sheetId }: PageEditor
               <SelectValue placeholder="Choose a page to edit..." />
             </SelectTrigger>
             <SelectContent>
-              {pages.map((page) => (
+              {pages.map(page => (
                 <SelectItem key={page.id} value={page.id}>
                   {page.name} ({page.slug})
                 </SelectItem>
@@ -222,7 +228,7 @@ export default function PageEditor({ userId, hubspotToken, sheetId }: PageEditor
                 <Input
                   id="page-name"
                   value={pageData.name}
-                  onChange={(e) => handleFieldChange("name", e.target.value)}
+                  onChange={e => handleFieldChange('name', e.target.value)}
                 />
               </div>
 
@@ -231,7 +237,7 @@ export default function PageEditor({ userId, hubspotToken, sheetId }: PageEditor
                 <Input
                   id="page-slug"
                   value={pageData.slug}
-                  onChange={(e) => handleFieldChange("slug", e.target.value)}
+                  onChange={e => handleFieldChange('slug', e.target.value)}
                 />
               </div>
 
@@ -240,13 +246,16 @@ export default function PageEditor({ userId, hubspotToken, sheetId }: PageEditor
                 <Input
                   id="html-title"
                   value={pageData.htmlTitle}
-                  onChange={(e) => handleFieldChange("htmlTitle", e.target.value)}
+                  onChange={e => handleFieldChange('htmlTitle', e.target.value)}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="language">Language</Label>
-                <Select value={pageData.language} onValueChange={(value) => handleFieldChange("language", value)}>
+                <Select
+                  value={pageData.language}
+                  onValueChange={value => handleFieldChange('language', value)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -265,7 +274,7 @@ export default function PageEditor({ userId, hubspotToken, sheetId }: PageEditor
               <Textarea
                 id="meta-description"
                 value={pageData.metaDescription}
-                onChange={(e) => handleFieldChange("metaDescription", e.target.value)}
+                onChange={e => handleFieldChange('metaDescription', e.target.value)}
                 rows={3}
               />
             </div>

@@ -1,22 +1,19 @@
 import { createClient } from '@/lib/supabase/server'
 import { type NextRequest, NextResponse } from 'next/server'
 
-export async function POST (request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     const supabase = createClient()
 
     // Get the authenticated user
     const {
       data: { user },
-      error: authError
+      error: authError,
     } = await supabase.auth.getUser()
 
     if (authError || !user) {
       console.error('Auth error:', authError)
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
@@ -27,12 +24,12 @@ export async function POST (request: NextRequest) {
       hubspot_connection_type,
       website_domain,
       google_refresh_token,
-      backup_sheet_id
+      backup_sheet_id,
     } = body
 
     // Prepare update data - only include fields that are provided
     const updateData: any = {
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     }
 
     if (hubspot_token !== undefined) {
@@ -65,7 +62,7 @@ export async function POST (request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: `Database select error: ${selectError.message}`
+          error: `Database select error: ${selectError.message}`,
         },
         { status: 500 }
       )
@@ -83,7 +80,7 @@ export async function POST (request: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: `Failed to update settings: ${updateError.message}`
+            error: `Failed to update settings: ${updateError.message}`,
           },
           { status: 500 }
         )
@@ -92,19 +89,17 @@ export async function POST (request: NextRequest) {
       // Insert new record
       const insertData = {
         user_id: user.id,
-        ...updateData
+        ...updateData,
       }
 
-      const { error: insertError } = await supabase
-        .from('user_settings')
-        .insert(insertData)
+      const { error: insertError } = await supabase.from('user_settings').insert(insertData)
 
       if (insertError) {
         console.error('Insert error:', insertError)
         return NextResponse.json(
           {
             success: false,
-            error: `Failed to create settings: ${insertError.message}`
+            error: `Failed to create settings: ${insertError.message}`,
           },
           { status: 500 }
         )
@@ -117,29 +112,24 @@ export async function POST (request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: `Internal server error: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
+        error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}`,
       },
       { status: 500 }
     )
   }
 }
 
-export async function GET (request: NextRequest) {
+export async function GET() {
   try {
     const supabase = createClient()
 
     const {
       data: { user },
-      error: authError
+      error: authError,
     } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
     const { data: userSettings, error } = await supabase
@@ -153,7 +143,7 @@ export async function GET (request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: `Failed to get settings: ${error.message}`
+          error: `Failed to get settings: ${error.message}`,
         },
         { status: 500 }
       )
@@ -161,16 +151,14 @@ export async function GET (request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      settings: userSettings || {}
+      settings: userSettings || {},
     })
   } catch (error) {
     console.error('Settings API error:', error)
     return NextResponse.json(
       {
         success: false,
-        error: `Internal server error: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
+        error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}`,
       },
       { status: 500 }
     )

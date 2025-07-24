@@ -1,71 +1,67 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { google } from "googleapis";
-import { createClient } from "@/lib/supabase/server";
+import { type NextRequest, NextResponse } from 'next/server'
+import { google } from 'googleapis'
+import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
-  console.log("=== Google Backup API Called ===");
+  console.log('=== Google Backup API Called ===')
 
   try {
-    const { sheetId, tabName, pages, userId, backupSessionId } =
-      await request.json();
+    const { sheetId, tabName, pages, userId, backupSessionId } = await request.json()
 
-    console.log("Backup request:", {
+    console.log('Backup request:', {
       sheetId,
       tabName,
       pagesCount: pages?.length,
       userId,
       backupSessionId,
-    });
+    })
 
     if (!sheetId || !pages || !Array.isArray(pages)) {
-      return NextResponse.json(
-        { success: false, error: "Missing required data" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Missing required data' }, { status: 400 })
     }
 
     // Set up Google Sheets API
     const auth = new google.auth.GoogleAuth({
       credentials: {
         client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
       },
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-    });
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    })
 
-    const sheets = google.sheets({ version: "v4", auth });
+    const sheets = google.sheets({ version: 'v4', auth })
 
     // Prepare backup data with timestamp
     const headers = [
-      "Backup Date",
-      "ID",
-      "Name",
-      "Slug",
-      "URL",
-      "Language",
-      "Domain",
-      "Last Updated",
-      "Status",
-      "HTML Title",
-      "Meta Description",
-    ];
+      'Backup Date',
+      'ID',
+      'Name',
+      'Slug',
+      'URL',
+      'Language',
+      'Domain',
+      'Last Updated',
+      'Status',
+      'HTML Title',
+      'Meta Description',
+    ]
 
-    const backupDate = new Date().toISOString();
+    const backupDate = new Date().toISOString()
     const rows = pages.map((page: any) => [
       backupDate,
-      page.id || "",
-      page.name || "",
-      page.slug || "",
-      page.url || "",
-      page.language || "",
-      page.domain || "",
-      page.updatedAt ? new Date(page.updatedAt).toLocaleDateString() : "",
-      page.status || "PUBLISHED",
-      page.htmlTitle || "",
-      page.metaDescription || "",
-    ]);
+      page.id || '',
+      page.name || '',
+      page.slug || '',
+      page.url || '',
+      page.language || '',
+      page.domain || '',
+      page.updatedAt ? new Date(page.updatedAt).toLocaleDateString() : '',
+      page.status || 'PUBLISHED',
+      page.htmlTitle || '',
+      page.metaDescription || '',
+    ])
 
-    const allData = [headers, ...rows];
+    const allData = [headers, ...rows]
 
     // Create new tab for backup
     try {
@@ -82,21 +78,22 @@ export async function POST(request: NextRequest) {
             },
           ],
         },
-      });
-      console.log(`Created backup tab: ${tabName}`);
+      })
+      console.log(`Created backup tab: ${tabName}`)
     } catch (tabError) {
-      console.log("Tab might already exist, continuing...");
+      console.log(tabError)
+      console.log('Tab might already exist, continuing...')
     }
 
     // Write backup data
     await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
       range: `${tabName}!A1`,
-      valueInputOption: "RAW",
+      valueInputOption: 'RAW',
       requestBody: {
         values: allData,
       },
-    });
+    })
 
     // Format the backup sheet
     await sheets.spreadsheets.batchUpdate({
@@ -116,19 +113,19 @@ export async function POST(request: NextRequest) {
                   textFormat: { bold: true },
                 },
               },
-              fields: "userEnteredFormat(backgroundColor,textFormat)",
+              fields: 'userEnteredFormat(backgroundColor,textFormat)',
             },
           },
         ],
       },
-    });
+    })
 
-    console.log("Applied backup sheet formatting");
+    console.log('Applied backup sheet formatting')
 
     // Save page snapshots to Supabase for change tracking
     if (userId) {
       try {
-        const supabase = createClient();
+        const supabase = createClient()
         const snapshots = pages.map((page: any) => ({
           user_id: userId,
           page_id: page.id,
@@ -136,24 +133,24 @@ export async function POST(request: NextRequest) {
           page_slug: page.slug,
           page_url: page.url,
           page_content: page,
-          snapshot_date: new Date().toISOString().split("T")[0],
-        }));
+          snapshot_date: new Date().toISOString().split('T')[0],
+        }))
 
         const { error: snapshotError } = await supabase
-          .from("page_snapshots")
-          .upsert(snapshots, { onConflict: "user_id,page_id,snapshot_date" });
+          .from('page_snapshots')
+          .upsert(snapshots, { onConflict: 'user_id,page_id,snapshot_date' })
 
         if (snapshotError) {
-          console.error("Snapshot error:", snapshotError);
+          console.error('Snapshot error:', snapshotError)
         } else {
-          console.log("Page snapshots saved to Supabase");
+          console.log('Page snapshots saved to Supabase')
         }
       } catch (supabaseError) {
-        console.error("Supabase snapshot error:", supabaseError);
+        console.error('Supabase snapshot error:', supabaseError)
       }
     }
 
-    console.log(`✅ Successfully created backup with ${pages.length} pages`);
+    console.log(`✅ Successfully created backup with ${pages.length} pages`)
 
     return NextResponse.json({
       success: true,
@@ -162,16 +159,16 @@ export async function POST(request: NextRequest) {
       tabName,
       backupDate,
       message: `Successfully created backup with ${pages.length} pages`,
-    });
+    })
   } catch (error) {
-    console.error("Google backup error:", error);
+    console.error('Google backup error:', error)
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to create backup",
-        details: error instanceof Error ? error.message : "Unknown error",
+        error: 'Failed to create backup',
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
-    );
+    )
   }
 }

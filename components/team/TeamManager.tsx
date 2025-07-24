@@ -1,14 +1,20 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/hooks/use-toast"
-import { Users, UserPlus, Crown, Shield, Eye, Mail, Calendar } from "lucide-react"
-import type { User } from "@supabase/supabase-js"
+import { useState } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useToast } from '@/hooks/use-toast'
+import { Users, UserPlus, Crown, Shield, Eye, Mail, Calendar } from 'lucide-react'
+import type { User } from '@supabase/supabase-js'
 
 interface TeamManagerProps {
   user: User
@@ -18,8 +24,8 @@ interface TeamManagerProps {
 interface TeamMember {
   id: string
   email: string
-  role: "owner" | "admin" | "member" | "viewer"
-  status: "active" | "pending" | "inactive"
+  role: 'owner' | 'admin' | 'member' | 'viewer'
+  status: 'active' | 'pending' | 'inactive'
   joinedAt: string
   lastActive: string
 }
@@ -28,28 +34,28 @@ export default function TeamManager({ user, isPremium }: TeamManagerProps) {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
     {
       id: user.id,
-      email: user.email || "",
-      role: "owner",
-      status: "active",
+      email: user.email || '',
+      role: 'owner',
+      status: 'active',
       joinedAt: new Date().toISOString(),
       lastActive: new Date().toISOString(),
     },
   ])
-  const [inviteEmail, setInviteEmail] = useState("")
-  const [inviteRole, setInviteRole] = useState<"admin" | "member" | "viewer">("member")
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState<'admin' | 'member' | 'viewer'>('member')
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case "owner":
+      case 'owner':
         return <Crown className="h-4 w-4 text-yellow-600" />
-      case "admin":
+      case 'admin':
         return <Shield className="h-4 w-4 text-blue-600" />
-      case "member":
+      case 'member':
         return <Users className="h-4 w-4 text-green-600" />
-      case "viewer":
-        return <Eye className="h-4 w-4 text-gray-600" />
+      case 'viewer':
+        return <Eye className="h-4 w-4 text-muted-foreground" />
       default:
         return <Users className="h-4 w-4" />
     }
@@ -57,47 +63,47 @@ export default function TeamManager({ user, isPremium }: TeamManagerProps) {
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
-      case "owner":
-        return "default"
-      case "admin":
-        return "secondary"
-      case "member":
-        return "outline"
-      case "viewer":
-        return "outline"
+      case 'owner':
+        return 'default'
+      case 'admin':
+        return 'secondary'
+      case 'member':
+        return 'outline'
+      case 'viewer':
+        return 'outline'
       default:
-        return "outline"
+        return 'outline'
     }
   }
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case "active":
-        return "default"
-      case "pending":
-        return "secondary"
-      case "inactive":
-        return "outline"
+      case 'active':
+        return 'default'
+      case 'pending':
+        return 'secondary'
+      case 'inactive':
+        return 'outline'
       default:
-        return "outline"
+        return 'outline'
     }
   }
 
   const inviteTeamMember = async () => {
     if (!isPremium) {
       toast({
-        title: "Premium Feature",
-        description: "Team collaboration is available with Premium plans",
-        variant: "destructive",
+        title: 'Premium Feature',
+        description: 'Team collaboration is available with Premium plans',
+        variant: 'destructive',
       })
       return
     }
 
     if (!inviteEmail.trim()) {
       toast({
-        title: "Email Required",
-        description: "Please enter an email address",
-        variant: "destructive",
+        title: 'Email Required',
+        description: 'Please enter an email address',
+        variant: 'destructive',
       })
       return
     }
@@ -105,30 +111,31 @@ export default function TeamManager({ user, isPremium }: TeamManagerProps) {
     setLoading(true)
     try {
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
       const newMember: TeamMember = {
         id: `temp-${Date.now()}`,
         email: inviteEmail,
         role: inviteRole,
-        status: "pending",
+        status: 'pending',
         joinedAt: new Date().toISOString(),
         lastActive: new Date().toISOString(),
       }
 
       setTeamMembers([...teamMembers, newMember])
-      setInviteEmail("")
-      setInviteRole("member")
+      setInviteEmail('')
+      setInviteRole('member')
 
       toast({
-        title: "Invitation Sent! 📧",
+        title: 'Invitation Sent! 📧',
         description: `Invited ${inviteEmail} as ${inviteRole}`,
       })
     } catch (error) {
+      console.error('Failed to send invitation:', error)
       toast({
-        title: "Invitation Failed",
-        description: "Failed to send team invitation",
-        variant: "destructive",
+        title: 'Invitation Failed',
+        description: 'Failed to send team invitation',
+        variant: 'destructive',
       })
     }
     setLoading(false)
@@ -138,16 +145,17 @@ export default function TeamManager({ user, isPremium }: TeamManagerProps) {
     if (!isPremium) return
 
     try {
-      setTeamMembers(teamMembers.filter((member) => member.id !== memberId))
+      setTeamMembers(teamMembers.filter(member => member.id !== memberId))
       toast({
-        title: "Member Removed",
-        description: "Team member has been removed",
+        title: 'Member Removed',
+        description: 'Team member has been removed',
       })
     } catch (error) {
+      console.error('Failed to remove team member:', error)
       toast({
-        title: "Error",
-        description: "Failed to remove team member",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to remove team member',
+        variant: 'destructive',
       })
     }
   }
@@ -157,17 +165,20 @@ export default function TeamManager({ user, isPremium }: TeamManagerProps) {
 
     try {
       setTeamMembers(
-        teamMembers.map((member) => (member.id === memberId ? { ...member, role: newRole as any } : member)),
+        teamMembers.map(member =>
+          member.id === memberId ? { ...member, role: newRole as any } : member
+        )
       )
       toast({
-        title: "Role Updated",
+        title: 'Role Updated',
         description: `Member role updated to ${newRole}`,
       })
     } catch (error) {
+      console.error('Failed to update member role:', error)
       toast({
-        title: "Error",
-        description: "Failed to update member role",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update member role',
+        variant: 'destructive',
       })
     }
   }
@@ -186,10 +197,16 @@ export default function TeamManager({ user, isPremium }: TeamManagerProps) {
           <div className="text-center py-8">
             <Crown className="h-12 w-12 text-amber-500 mx-auto mb-4" />
             <h3 className="text-lg font-medium mb-2">Premium Feature</h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-muted-foreground mb-4">
               Team collaboration and role-based permissions are available with Premium plans
             </p>
-            <Button onClick={() => document.querySelector('[value="premium"]')?.click()}>Upgrade to Premium</Button>
+            <Button
+              onClick={() =>
+                (document.querySelector('[value="premium"]') as HTMLButtonElement | null)?.click()
+              }
+            >
+              Upgrade to Premium
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -206,7 +223,7 @@ export default function TeamManager({ user, isPremium }: TeamManagerProps) {
               <Users className="h-5 w-5 text-blue-600" />
               <div>
                 <p className="text-2xl font-bold">{teamMembers.length}</p>
-                <p className="text-sm text-gray-600">Team Members</p>
+                <p className="text-sm text-muted-foreground">Team Members</p>
               </div>
             </div>
           </CardContent>
@@ -217,8 +234,10 @@ export default function TeamManager({ user, isPremium }: TeamManagerProps) {
             <div className="flex items-center space-x-2">
               <Mail className="h-5 w-5 text-amber-600" />
               <div>
-                <p className="text-2xl font-bold">{teamMembers.filter((m) => m.status === "pending").length}</p>
-                <p className="text-sm text-gray-600">Pending Invites</p>
+                <p className="text-2xl font-bold">
+                  {teamMembers.filter(m => m.status === 'pending').length}
+                </p>
+                <p className="text-sm text-muted-foreground">Pending Invites</p>
               </div>
             </div>
           </CardContent>
@@ -229,8 +248,10 @@ export default function TeamManager({ user, isPremium }: TeamManagerProps) {
             <div className="flex items-center space-x-2">
               <Shield className="h-5 w-5 text-green-600" />
               <div>
-                <p className="text-2xl font-bold">{teamMembers.filter((m) => m.role === "admin").length}</p>
-                <p className="text-sm text-gray-600">Administrators</p>
+                <p className="text-2xl font-bold">
+                  {teamMembers.filter(m => m.role === 'admin').length}
+                </p>
+                <p className="text-sm text-muted-foreground">Administrators</p>
               </div>
             </div>
           </CardContent>
@@ -252,7 +273,7 @@ export default function TeamManager({ user, isPremium }: TeamManagerProps) {
               <Input
                 placeholder="Enter email address"
                 value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
+                onChange={e => setInviteEmail(e.target.value)}
                 type="email"
               />
             </div>
@@ -268,7 +289,7 @@ export default function TeamManager({ user, isPremium }: TeamManagerProps) {
             </Select>
           </div>
           <Button onClick={inviteTeamMember} disabled={loading} className="w-full">
-            {loading ? "Sending Invitation..." : "Send Invitation"}
+            {loading ? 'Sending Invitation...' : 'Send Invitation'}
           </Button>
         </CardContent>
       </Card>
@@ -281,16 +302,22 @@ export default function TeamManager({ user, isPremium }: TeamManagerProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {teamMembers.map((member) => (
-              <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg">
+            {teamMembers.map(member => (
+              <div
+                key={member.id}
+                className="flex items-center justify-between p-4 border rounded-lg"
+              >
                 <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                    <Users className="h-5 w-5 text-gray-600" />
+                  <div className="w-10 h-10 bg-muted/50 rounded-full flex items-center justify-center">
+                    <Users className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div>
                     <p className="font-medium">{member.email}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge variant={getRoleBadgeVariant(member.role)} className="flex items-center gap-1">
+                      <Badge
+                        variant={getRoleBadgeVariant(member.role)}
+                        className="flex items-center gap-1"
+                      >
                         {getRoleIcon(member.role)}
                         {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
                       </Badge>
@@ -309,12 +336,12 @@ export default function TeamManager({ user, isPremium }: TeamManagerProps) {
                     </div>
                   </div>
 
-                  {member.role !== "owner" && (
+                  {member.role !== 'owner' && (
                     <div className="flex items-center gap-2">
                       <Select
                         value={member.role}
-                        onValueChange={(value) => updateMemberRole(member.id, value)}
-                        disabled={member.status === "pending"}
+                        onValueChange={value => updateMemberRole(member.id, value)}
+                        disabled={member.status === 'pending'}
                       >
                         <SelectTrigger className="w-32">
                           <SelectValue />
@@ -356,7 +383,7 @@ export default function TeamManager({ user, isPremium }: TeamManagerProps) {
                 <Crown className="h-4 w-4 text-yellow-600" />
                 <span className="font-medium">Owner</span>
               </div>
-              <ul className="text-sm text-gray-600 space-y-1">
+              <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Full access to all features</li>
                 <li>• Manage team members</li>
                 <li>• Billing and subscription</li>
@@ -369,7 +396,7 @@ export default function TeamManager({ user, isPremium }: TeamManagerProps) {
                 <Shield className="h-4 w-4 text-blue-600" />
                 <span className="font-medium">Administrator</span>
               </div>
-              <ul className="text-sm text-gray-600 space-y-1">
+              <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Manage backups</li>
                 <li>• Configure settings</li>
                 <li>• View audit logs</li>
@@ -382,7 +409,7 @@ export default function TeamManager({ user, isPremium }: TeamManagerProps) {
                 <Users className="h-4 w-4 text-green-600" />
                 <span className="font-medium">Member</span>
               </div>
-              <ul className="text-sm text-gray-600 space-y-1">
+              <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Create backups</li>
                 <li>• View pages</li>
                 <li>• Basic settings</li>
@@ -392,10 +419,10 @@ export default function TeamManager({ user, isPremium }: TeamManagerProps) {
 
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Eye className="h-4 w-4 text-gray-600" />
+                <Eye className="h-4 w-4 text-muted-foreground" />
                 <span className="font-medium">Viewer</span>
               </div>
-              <ul className="text-sm text-gray-600 space-y-1">
+              <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• View pages</li>
                 <li>• View backup history</li>
                 <li>• Read-only access</li>

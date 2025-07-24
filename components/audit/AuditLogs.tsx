@@ -1,24 +1,18 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+} from '@/components/ui/select'
+import { useToast } from '@/hooks/use-toast'
 import {
   FileText,
   Search,
@@ -27,173 +21,171 @@ import {
   Activity,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react";
-import type { User as SupabaseUser } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
+} from 'lucide-react'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/client'
 
 interface AuditLogsProps {
-  user: SupabaseUser;
+  user: SupabaseUser
 }
 
 interface AuditLog {
-  id: string;
-  action_type: string;
-  resource_type: string;
-  resource_id: string | null;
-  details: any;
-  created_at: string;
+  id: string
+  action_type: string
+  resource_type: string
+  resource_id: string | null
+  details: any
+  created_at: string
 }
 
 export default function AuditLogs({ user }: AuditLogsProps) {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [filteredLogs, setFilteredLogs] = useState<AuditLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [actionFilter, setActionFilter] = useState("all");
-  const [resourceFilter, setResourceFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const logsPerPage = 10;
+  const [logs, setLogs] = useState<AuditLog[]>([])
+  const [filteredLogs, setFilteredLogs] = useState<AuditLog[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [actionFilter, setActionFilter] = useState('all')
+  const [resourceFilter, setResourceFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const logsPerPage = 10
 
-  const totalPages = Math.ceil(filteredLogs.length / logsPerPage);
-  const supabase = createClient();
-  const { toast } = useToast();
-
-  useEffect(() => {
-    loadAuditLogs();
-  }, []);
+  const totalPages = Math.ceil(filteredLogs.length / logsPerPage)
+  const supabase = createClient()
+  const { toast } = useToast()
 
   useEffect(() => {
-    filterLogs();
-    setCurrentPage(1);
-  }, [logs, searchTerm, actionFilter, resourceFilter]);
+    loadAuditLogs()
+  }, [])
+
+  useEffect(() => {
+    filterLogs()
+    setCurrentPage(1)
+  }, [logs, searchTerm, actionFilter, resourceFilter])
 
   const loadAuditLogs = async () => {
     try {
       const { data, error } = await supabase
-        .from("audit_logs")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(100);
+        .from('audit_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(100)
 
-      if (error) throw error;
+      if (error) throw error
 
-      setLogs(data || []);
+      setLogs(data || [])
     } catch (error) {
-      console.error("Error loading audit logs:", error);
+      console.error('Error loading audit logs:', error)
       toast({
-        title: "Error Loading Logs",
-        description: "Failed to load audit logs",
-        variant: "destructive",
-      });
+        title: 'Error Loading Logs',
+        description: 'Failed to load audit logs',
+        variant: 'destructive',
+      })
     }
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   const filterLogs = () => {
-    let filtered = logs;
+    let filtered = logs
 
     if (searchTerm) {
       filtered = filtered.filter(
-        (log) =>
+        log =>
           log.action_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
           log.resource_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (log.resource_id &&
-            log.resource_id.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
+          (log.resource_id && log.resource_id.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
     }
 
-    if (actionFilter !== "all") {
-      filtered = filtered.filter((log) => log.action_type === actionFilter);
+    if (actionFilter !== 'all') {
+      filtered = filtered.filter(log => log.action_type === actionFilter)
     }
 
-    if (resourceFilter !== "all") {
-      filtered = filtered.filter((log) => log.resource_type === resourceFilter);
+    if (resourceFilter !== 'all') {
+      filtered = filtered.filter(log => log.resource_type === resourceFilter)
     }
 
-    setFilteredLogs(filtered);
-  };
+    setFilteredLogs(filtered)
+  }
 
   const exportLogs = () => {
     const csvContent = [
-      ["Timestamp", "Action", "Resource Type", "Resource ID", "Details"],
-      ...filteredLogs.map((log) => [
+      ['Timestamp', 'Action', 'Resource Type', 'Resource ID', 'Details'],
+      ...filteredLogs.map(log => [
         new Date(log.created_at).toLocaleString(),
         log.action_type,
         log.resource_type,
-        log.resource_id || "",
+        log.resource_id || '',
         JSON.stringify(log.details),
       ]),
     ]
-      .map((row) => row.map((field) => `"${field}"`).join(","))
-      .join("\n");
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n')
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `audit-logs-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
 
     toast({
-      title: "Export Complete",
+      title: 'Export Complete',
       description: `Exported ${filteredLogs.length} audit log entries`,
-    });
-  };
+    })
+  }
 
   const getActionBadgeVariant = (action: string) => {
     switch (action) {
-      case "create":
-        return "default";
-      case "update":
-        return "secondary";
-      case "delete":
-        return "destructive";
-      case "connect":
-        return "default";
-      case "backup":
-        return "outline";
+      case 'create':
+        return 'default'
+      case 'update':
+        return 'secondary'
+      case 'delete':
+        return 'destructive'
+      case 'connect':
+        return 'default'
+      case 'backup':
+        return 'outline'
       default:
-        return "secondary";
+        return 'secondary'
     }
-  };
+  }
 
   const getActionIcon = (action: string) => {
     switch (action) {
-      case "connect":
-        return <Activity className="h-3 w-3" />;
-      case "backup":
-        return <Download className="h-3 w-3" />;
+      case 'connect':
+        return <Activity className="h-3 w-3" />
+      case 'backup':
+        return <Download className="h-3 w-3" />
       default:
-        return <FileText className="h-3 w-3" />;
+        return <FileText className="h-3 w-3" />
     }
-  };
+  }
 
-  const goToPrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
-  const goToNextPage = () =>
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  const goToPrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1))
+  const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages))
 
   const paginatedLogs = filteredLogs.slice(
     (currentPage - 1) * logsPerPage,
     currentPage * logsPerPage
-  );
+  )
 
-  const uniqueActions = [...new Set(logs.map((log) => log.action_type))];
-  const uniqueResources = [...new Set(logs.map((log) => log.resource_type))];
+  const uniqueActions = [...new Set(logs.map(log => log.action_type))]
+  const uniqueResources = [...new Set(logs.map(log => log.resource_type))]
 
   if (loading) {
     return (
       <Card>
         <CardContent className="pt-6">
           <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+            <div className="h-4 bg-muted/50 rounded w-3/4"></div>
+            <div className="h-4 bg-muted/50 rounded w-1/2"></div>
+            <div className="h-4 bg-muted/50 rounded w-2/3"></div>
           </div>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   return (
@@ -205,18 +197,16 @@ export default function AuditLogs({ user }: AuditLogsProps) {
             <FileText className="h-5 w-5" />
             Audit Logs ({filteredLogs.length} entries)
           </CardTitle>
-          <CardDescription>
-            Track all activities and changes in your account
-          </CardDescription>
+          <CardDescription>Track all activities and changes in your account</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
               <Input
                 placeholder="Search logs..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -227,7 +217,7 @@ export default function AuditLogs({ user }: AuditLogsProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Actions</SelectItem>
-                {uniqueActions.map((action) => (
+                {uniqueActions.map(action => (
                   <SelectItem key={action} value={action}>
                     {action.charAt(0).toUpperCase() + action.slice(1)}
                   </SelectItem>
@@ -241,10 +231,10 @@ export default function AuditLogs({ user }: AuditLogsProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Resources</SelectItem>
-                {uniqueResources.map((resource) => (
+                {uniqueResources.map(resource => (
                   <SelectItem key={resource} value={resource}>
-                    {resource.replace("_", " ").charAt(0).toUpperCase() +
-                      resource.replace("_", " ").slice(1)}
+                    {resource.replace('_', ' ').charAt(0).toUpperCase() +
+                      resource.replace('_', ' ').slice(1)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -274,27 +264,17 @@ export default function AuditLogs({ user }: AuditLogsProps) {
         <div className="space-y-4">
           <div className="overflow-auto border rounded-lg">
             <table className="min-w-full text-sm text-left">
-              <thead className="bg-gray-100">
+              <thead className="bg-muted">
                 <tr>
-                  <th className="px-4 py-2 font-medium text-gray-700">
-                    Timestamp
-                  </th>
-                  <th className="px-4 py-2 font-medium text-gray-700">
-                    Action
-                  </th>
-                  <th className="px-4 py-2 font-medium text-gray-700">
-                    Resource
-                  </th>
-                  <th className="px-4 py-2 font-medium text-gray-700">
-                    Resource ID
-                  </th>
-                  <th className="px-4 py-2 font-medium text-gray-700">
-                    Details
-                  </th>
+                  <th className="px-4 py-2 font-medium text-gray-700">Timestamp</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">Action</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">Resource</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">Resource ID</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">Details</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {paginatedLogs.map((log) => (
+                {paginatedLogs.map(log => (
                   <tr key={log.id}>
                     <td className="px-4 py-2 text-gray-700">
                       {new Date(log.created_at).toLocaleString()}
@@ -308,23 +288,18 @@ export default function AuditLogs({ user }: AuditLogsProps) {
                         {log.action_type}
                       </Badge>
                     </td>
-                    <td className="px-4 py-2 capitalize">
-                      {log.resource_type.replace("_", " ")}
+                    <td className="px-4 py-2 capitalize">{log.resource_type.replace('_', ' ')}</td>
+                    <td className="px-4 py-2 font-mono text-xs text-muted-foreground">
+                      {log.resource_id || '-'}
                     </td>
-                    <td className="px-4 py-2 font-mono text-xs text-gray-600">
-                      {log.resource_id || "-"}
-                    </td>
-                    <td className="px-4 py-2 text-xs text-gray-600">
-                      {log.details && typeof log.details === "object"
+                    <td className="px-4 py-2 text-xs text-muted-foreground">
+                      {log.details && typeof log.details === 'object'
                         ? Object.entries(log.details)
                             .map(
-                              ([k, v]) =>
-                                `${k}: ${
-                                  typeof v === "string" ? v : JSON.stringify(v)
-                                }`
+                              ([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`
                             )
-                            .join(", ")
-                        : "-"}
+                            .join(', ')
+                        : '-'}
                     </td>
                   </tr>
                 ))}
@@ -334,16 +309,11 @@ export default function AuditLogs({ user }: AuditLogsProps) {
 
           {/* Pagination */}
           <div className="flex justify-end items-center gap-2 mt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToPrevPage}
-              disabled={currentPage === 1}
-            >
+            <Button variant="outline" size="sm" onClick={goToPrevPage} disabled={currentPage === 1}>
               <ChevronLeft className="h-4 w-4 mr-1" />
               Previous
             </Button>
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-muted-foreground">
               Page {currentPage} of {totalPages}
             </span>
             <Button
@@ -361,19 +331,17 @@ export default function AuditLogs({ user }: AuditLogsProps) {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center py-8">
-              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No Audit Logs
-              </h3>
-              <p className="text-gray-600">
+              <FileText className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">No Audit Logs</h3>
+              <p className="text-muted-foreground">
                 {logs.length === 0
-                  ? "No activities recorded yet"
-                  : "No logs match your current filters"}
+                  ? 'No activities recorded yet'
+                  : 'No logs match your current filters'}
               </p>
             </div>
           </CardContent>
         </Card>
       )}
     </div>
-  );
+  )
 }

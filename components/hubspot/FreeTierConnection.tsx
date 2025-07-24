@@ -1,14 +1,14 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/hooks/use-toast"
-import { AlertTriangle, Globe, Database, Zap } from "lucide-react"
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { useToast } from '@/hooks/use-toast'
+import { AlertTriangle, Globe, Database, Zap } from 'lucide-react'
 
 interface FreeTierConnectionProps {
   onConnectionChange: (connected: boolean) => void
@@ -21,8 +21,8 @@ export default function FreeTierConnection({
   onTokenChange,
   onDomainChange,
 }: FreeTierConnectionProps) {
-  const [token, setToken] = useState("")
-  const [domain, setDomain] = useState("")
+  const [token, setToken] = useState('')
+  const [domain, setDomain] = useState('')
   const [isConnected, setIsConnected] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResults, setTestResults] = useState<any>(null)
@@ -31,18 +31,18 @@ export default function FreeTierConnection({
   const testFreeTierConnection = async () => {
     if (!token.trim()) {
       toast({
-        title: "Error",
-        description: "Please enter a HubSpot token",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Please enter a HubSpot token',
+        variant: 'destructive',
       })
       return
     }
 
     setTesting(true)
     try {
-      const response = await fetch("/api/hubspot/free-tier-pages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/hubspot/free-tier-pages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
       })
 
@@ -54,21 +54,22 @@ export default function FreeTierConnection({
         onConnectionChange(true)
         onTokenChange(token)
         toast({
-          title: "HubSpot Connected! 🎉",
+          title: 'HubSpot Connected! 🎉',
           description: `Found ${data.total} items across ${data.successfulEndpoints?.length || 0} data types`,
         })
       } else {
         toast({
-          title: "Connection Failed",
-          description: data.error || "Failed to connect to HubSpot",
-          variant: "destructive",
+          title: 'Connection Failed',
+          description: data.error || 'Failed to connect to HubSpot',
+          variant: 'destructive',
         })
       }
     } catch (error) {
+      console.error('Error testing HubSpot connection:', error)
       toast({
-        title: "Error",
-        description: "Failed to test HubSpot connection",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to test HubSpot connection',
+        variant: 'destructive',
       })
     }
     setTesting(false)
@@ -77,18 +78,18 @@ export default function FreeTierConnection({
   const testWebsiteScraping = async () => {
     if (!domain.trim()) {
       toast({
-        title: "Error",
-        description: "Please enter your website domain",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Please enter your website domain',
+        variant: 'destructive',
       })
       return
     }
 
     setTesting(true)
     try {
-      const response = await fetch("/api/hubspot/website-scraper", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/hubspot/website-scraper', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ domain, hubspotToken: token }),
       })
 
@@ -98,34 +99,35 @@ export default function FreeTierConnection({
       if (data.success) {
         onDomainChange(domain)
         toast({
-          title: "Website Scraping Successful! 🎉",
+          title: 'Website Scraping Successful! 🎉',
           description: `Found ${data.total} pages on your website`,
         })
       } else {
         toast({
-          title: "Scraping Failed",
-          description: data.error || "Failed to scrape website",
-          variant: "destructive",
+          title: 'Scraping Failed',
+          description: data.error || 'Failed to scrape website',
+          variant: 'destructive',
         })
       }
     } catch (error) {
+      console.error('Error scraping website:', error)
       toast({
-        title: "Error",
-        description: "Failed to scrape website",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to scrape website',
+        variant: 'destructive',
       })
     }
     setTesting(false)
   }
 
   const disconnect = () => {
-    setToken("")
-    setDomain("")
+    setToken('')
+    setDomain('')
     setIsConnected(false)
     setTestResults(null)
     onConnectionChange(false)
-    onTokenChange("")
-    onDomainChange("")
+    onTokenChange('')
+    onDomainChange('')
   }
 
   return (
@@ -135,7 +137,9 @@ export default function FreeTierConnection({
           <Zap className="h-5 w-5" />
           HubSpot Free Tier Setup
         </CardTitle>
-        <CardDescription>Connect to HubSpot's free tier APIs and scrape your website</CardDescription>
+        <CardDescription>
+          Connect to HubSpot's free tier APIs and scrape your website
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {/* Warning about CMS Pages */}
@@ -178,7 +182,7 @@ export default function FreeTierConnection({
           <TabsContent value="api" className="space-y-4">
             {!isConnected ? (
               <form
-                onSubmit={(e) => {
+                onSubmit={e => {
                   e.preventDefault()
                   testFreeTierConnection()
                 }}
@@ -190,7 +194,7 @@ export default function FreeTierConnection({
                     id="hubspot-token"
                     type="password"
                     value={token}
-                    onChange={(e) => setToken(e.target.value)}
+                    onChange={e => setToken(e.target.value)}
                     placeholder="pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                   />
                   <p className="text-xs text-gray-500">
@@ -198,7 +202,7 @@ export default function FreeTierConnection({
                   </p>
                 </div>
                 <Button type="submit" disabled={testing} className="w-full">
-                  {testing ? "Testing Connection..." : "Test HubSpot APIs"}
+                  {testing ? 'Testing Connection...' : 'Test HubSpot APIs'}
                 </Button>
               </form>
             ) : (
@@ -216,7 +220,7 @@ export default function FreeTierConnection({
           {/* Website Scraping Tab */}
           <TabsContent value="scraping" className="space-y-4">
             <form
-              onSubmit={(e) => {
+              onSubmit={e => {
                 e.preventDefault()
                 testWebsiteScraping()
               }}
@@ -228,13 +232,15 @@ export default function FreeTierConnection({
                   id="website-domain"
                   type="text"
                   value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
+                  onChange={e => setDomain(e.target.value)}
                   placeholder="example.com or 12345.hs-sites.com"
                 />
-                <p className="text-xs text-gray-500">Enter your HubSpot website domain (without https://)</p>
+                <p className="text-xs text-gray-500">
+                  Enter your HubSpot website domain (without https://)
+                </p>
               </div>
               <Button type="submit" disabled={testing} className="w-full">
-                {testing ? "Scraping Website..." : "Scrape Website Pages"}
+                {testing ? 'Scraping Website...' : 'Scrape Website Pages'}
               </Button>
             </form>
           </TabsContent>
@@ -242,7 +248,7 @@ export default function FreeTierConnection({
 
         {/* Test Results */}
         {testResults && (
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <div className="mt-6 p-4 bg-popover rounded-lg">
             <h4 className="font-medium mb-3">Connection Results:</h4>
             {testResults.success ? (
               <div className="space-y-2">
@@ -255,19 +261,21 @@ export default function FreeTierConnection({
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     {Object.entries(testResults.breakdown).map(
                       ([type, count]) =>
-                        count > 0 && (
+                        (count as number) > 0 && (
                           <div key={type} className="flex justify-between">
-                            <span className="capitalize">{type.replace("_", " ")}:</span>
+                            <span className="capitalize">{type.replace('_', ' ')}:</span>
                             <span className="font-medium">{count as number}</span>
                           </div>
-                        ),
+                        )
                     )}
                   </div>
                 )}
 
                 {testResults.successfulEndpoints && (
                   <div className="mt-2">
-                    <p className="text-xs text-gray-600">Working APIs: {testResults.successfulEndpoints.join(", ")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Working APIs: {testResults.successfulEndpoints.join(', ')}
+                    </p>
                   </div>
                 )}
               </div>
@@ -275,14 +283,16 @@ export default function FreeTierConnection({
               <div className="space-y-2">
                 <Badge variant="destructive">Failed</Badge>
                 <p className="text-sm text-red-600">{testResults.error}</p>
-                {testResults.suggestion && <p className="text-xs text-gray-600">{testResults.suggestion}</p>}
+                {testResults.suggestion && (
+                  <p className="text-xs text-muted-foreground">{testResults.suggestion}</p>
+                )}
               </div>
             )}
           </div>
         )}
 
         {/* Instructions */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="mt-6 bg-accent border border-blue-200 rounded-lg p-4">
           <h4 className="font-medium text-blue-900 mb-2">Free Tier Backup Strategy:</h4>
           <ul className="text-sm text-blue-800 space-y-1">
             <li>

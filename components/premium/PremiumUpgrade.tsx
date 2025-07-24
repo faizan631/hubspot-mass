@@ -1,85 +1,66 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Crown,
-  Check,
-  Zap,
-  Users,
-  Shield,
-  Database,
-  Calendar,
-  Star,
-} from "lucide-react";
-import type { User } from "@supabase/supabase-js";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import type { User } from '@supabase/supabase-js'
 
 interface PremiumUpgradeProps {
-  user: User;
+  user: User
 }
 
 export default function PremiumUpgrade({ user }: PremiumUpgradeProps) {
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+  // const [loading, setLoading] = useState(false)
+  // const { toast } = useToast()
 
-  const handleUpgrade = async (plan: string) => {
-    setLoading(true);
-    try {
-      // Simulate upgrade process
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+  console.log(user)
+  // const handleUpgrade = async (plan: string) => {
+  //   setLoading(true)
+  //   try {
+  //     // Simulate upgrade process
+  //     await new Promise(resolve => setTimeout(resolve, 2000))
 
-      toast({
-        title: "Upgrade Successful! 🎉",
-        description: `Welcome to ${plan}! Your premium features are now active.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Upgrade Failed",
-        description: "Please try again or contact support",
-        variant: "destructive",
-      });
-    }
-    setLoading(false);
-  };
+  //     toast({
+  //       title: 'Upgrade Successful! 🎉',
+  //       description: `Welcome to ${plan}! Your premium features are now active.`,
+  //     })
+  //   } catch (error) {
+  //     toast({
+  //       title: 'Upgrade Failed',
+  //       description: 'Please try again or contact support',
+  //       variant: 'destructive',
+  //     })
+  //   }
+  //   setLoading(false)
+  // }
 
-  const features = {
-    free: [
-      "Basic HubSpot connection",
-      "Website scraping (free tier)",
-      "Manual backups",
-      "Basic Google Sheets export",
-      "Email support",
-    ],
-    pro: [
-      "Full HubSpot CMS API access",
-      "Automated scheduled backups",
-      "Advanced field configuration",
-      "Team collaboration (up to 5 members)",
-      "Priority support",
-      "Audit logs and reporting",
-      "Custom backup schedules",
-      "Data validation and rollback",
-    ],
-    enterprise: [
-      "Everything in Pro",
-      "Unlimited team members",
-      "Advanced security controls",
-      "Custom integrations",
-      "Dedicated account manager",
-      "SLA guarantee",
-      "Advanced analytics",
-      "White-label options",
-    ],
-  };
+  // const features = {
+  //   free: [
+  //     'Basic HubSpot connection',
+  //     'Website scraping (free tier)',
+  //     'Manual backups',
+  //     'Basic Google Sheets export',
+  //     'Email support',
+  //   ],
+  //   pro: [
+  //     'Full HubSpot CMS API access',
+  //     'Automated scheduled backups',
+  //     'Advanced field configuration',
+  //     'Team collaboration (up to 5 members)',
+  //     'Priority support',
+  //     'Audit logs and reporting',
+  //     'Custom backup schedules',
+  //     'Data validation and rollback',
+  //   ],
+  //   enterprise: [
+  //     'Everything in Pro',
+  //     'Unlimited team members',
+  //     'Advanced security controls',
+  //     'Custom integrations',
+  //     'Dedicated account manager',
+  //     'SLA guarantee',
+  //     'Advanced analytics',
+  //     'White-label options',
+  //   ],
+  // }
 
   return (
     <div className="space-y-6">
@@ -91,7 +72,7 @@ export default function PremiumUpgrade({ user }: PremiumUpgradeProps) {
               <Crown className="h-5 w-5 text-amber-500" />
               <div>
                 <h3 className="font-medium">Current Plan: Free</h3>
-                <p className="text-sm text-gray-600">Upgrade to unlock premium features</p>
+                <p className="text-sm text-muted-foreground">Upgrade to unlock premium features</p>
               </div>
             </div>
             <Badge variant="outline">Free Tier</Badge>
@@ -105,12 +86,12 @@ export default function PremiumUpgrade({ user }: PremiumUpgradeProps) {
         {/* <Card className="relative">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-gray-600" />
+              <Zap className="h-5 w-5 text-muted-foreground" />
               Free
             </CardTitle>
             <CardDescription>Perfect for getting started</CardDescription>
             <div className="text-3xl font-bold">$0</div>
-            <div className="text-sm text-gray-600">Forever free</div>
+            <div className="text-sm text-muted-foreground">Forever free</div>
           </CardHeader>
           <CardContent className="space-y-4">
             <ul className="space-y-2">
@@ -130,7 +111,7 @@ export default function PremiumUpgrade({ user }: PremiumUpgradeProps) {
         {/* Pro Plan */}
         {/* <Card className="relative border-blue-200 shadow-lg">
           <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-            <Badge className="bg-blue-600 text-white">Most Popular</Badge>
+            <Badge className="bg-blue-600 text-foreground">Most Popular</Badge>
           </div>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -139,7 +120,7 @@ export default function PremiumUpgrade({ user }: PremiumUpgradeProps) {
             </CardTitle>
             <CardDescription>For growing businesses</CardDescription>
             <div className="text-3xl font-bold">$29</div>
-            <div className="text-sm text-gray-600">per month</div>
+            <div className="text-sm text-muted-foreground">per month</div>
           </CardHeader>
           <CardContent className="space-y-4">
             <ul className="space-y-2">
@@ -165,7 +146,7 @@ export default function PremiumUpgrade({ user }: PremiumUpgradeProps) {
             </CardTitle>
             <CardDescription>For large organizations</CardDescription>
             <div className="text-3xl font-bold">$99</div>
-            <div className="text-sm text-gray-600">per month</div>
+            <div className="text-sm text-muted-foreground">per month</div>
           </CardHeader>
           <CardContent className="space-y-4">
             <ul className="space-y-2">
@@ -251,32 +232,27 @@ export default function PremiumUpgrade({ user }: PremiumUpgradeProps) {
         <CardContent className="space-y-4">
           <div>
             <h4 className="font-medium mb-2">What does this platform do?</h4>
-            <p className="text-sm text-gray-600">
-              Our platform lets you sync your HubSpot CMS pages with Google
-              Sheets, allowing for easy backups, version tracking, and manual
-              content editing.
+            <p className="text-sm text-muted-foreground">
+              Our platform lets you sync your HubSpot CMS pages with Google Sheets, allowing for
+              easy backups, version tracking, and manual content editing.
             </p>
           </div>
           <div>
             <h4 className="font-medium mb-2">Is my HubSpot content safe?</h4>
-            <p className="text-sm text-gray-600">
-              Yes, we never modify your live HubSpot pages without your
-              permission. All backups are stored in your own Google Sheets for
-              full transparency and control.
+            <p className="text-sm text-muted-foreground">
+              Yes, we never modify your live HubSpot pages without your permission. All backups are
+              stored in your own Google Sheets for full transparency and control.
             </p>
           </div>
           <div>
-            <h4 className="font-medium mb-2">
-              Do I need coding experience to use this?
-            </h4>
-            <p className="text-sm text-gray-600">
-              Not at all. The entire system is designed for non-technical users
-              — just connect your HubSpot and Google accounts, and you're good
-              to go.
+            <h4 className="font-medium mb-2">Do I need coding experience to use this?</h4>
+            <p className="text-sm text-muted-foreground">
+              Not at all. The entire system is designed for non-technical users — just connect your
+              HubSpot and Google accounts, and you're good to go.
             </p>
           </div>
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

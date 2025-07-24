@@ -1,13 +1,13 @@
 // app/auth/signout/actions.ts
-"use server";
+'use server'
 
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 
 export async function signOutAction() {
-  const supabase = createClient();
+  const supabase = createClient()
 
-  await supabase.auth.signOut();
+  await supabase.auth.signOut()
 
-  redirect("/auth"); // or your login route
+  redirect('/auth') // or your login route
 }

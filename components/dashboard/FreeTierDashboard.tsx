@@ -1,18 +1,18 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import type { User } from "@supabase/supabase-js"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { LogOut, AlertTriangle } from "lucide-react"
-import GoogleConnection from "./GoogleConnection"
-import FreeTierConnection from "../hubspot/FreeTierConnection"
-import FreeTierBackupManager from "../backup/FreeTierBackupManager"
-import SyncHistory from "./SyncHistory"
-import { useToast } from "@/hooks/use-toast"
+import { useState } from 'react'
+import type { User } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { LogOut, AlertTriangle } from 'lucide-react'
+import GoogleConnection from './GoogleConnection'
+import FreeTierConnection from '../hubspot/FreeTierConnection'
+import FreeTierBackupManager from '../backup/FreeTierBackupManager'
+import SyncHistory from './SyncHistory'
+import { useToast } from '@/hooks/use-toast'
 
 interface FreeTierDashboardProps {
   user: User
@@ -21,9 +21,9 @@ interface FreeTierDashboardProps {
 export default function FreeTierDashboard({ user }: FreeTierDashboardProps) {
   const [googleConnected, setGoogleConnected] = useState(false)
   const [hubspotConnected, setHubspotConnected] = useState(false)
-  const [selectedSheetId, setSelectedSheetId] = useState<string>("")
-  const [hubspotToken, setHubspotToken] = useState<string>("")
-  const [domain, setDomain] = useState<string>("")
+  const [selectedSheetId, setSelectedSheetId] = useState<string>('')
+  const [hubspotToken, setHubspotToken] = useState<string>('')
+  const [domain, setDomain] = useState<string>('')
   const [refreshKey, setRefreshKey] = useState(0)
   const { toast } = useToast()
 
@@ -32,30 +32,31 @@ export default function FreeTierDashboard({ user }: FreeTierDashboardProps) {
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut()
     if (error) {
-      console.error("Sign out error:", error.message)
+      console.error('Sign out error:', error.message)
       toast({
-        title: "Error",
+        title: 'Error',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       })
     } else {
-      console.log("Signed out successfully")
-      window.location.href = "/"
+      console.log('Signed out successfully')
+      window.location.href = '/'
     }
   }
 
   const refreshHistory = () => {
-    setRefreshKey((prev) => prev + 1)
+    setRefreshKey(prev => prev + 1)
   }
 
+  console.log(refreshHistory)
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
+    <div className="min-h-screen bg-popover">
+      <header className="bg-background shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">HubSpot Free Tier Backup</h1>
-              <p className="text-sm text-gray-600">Welcome back, {user.email}</p>
+              <p className="text-sm text-muted-foreground">Welcome back, {user.email}</p>
             </div>
             <Button onClick={handleSignOut} variant="outline">
               <LogOut className="w-4 h-4 mr-2" />
@@ -79,10 +80,12 @@ export default function FreeTierDashboard({ user }: FreeTierDashboardProps) {
                   </p>
                   <ul className="text-sm text-amber-800 mt-2 space-y-1">
                     <li>
-                      • <strong>Free HubSpot APIs:</strong> Blog posts, contacts, companies, deals, forms
+                      • <strong>Free HubSpot APIs:</strong> Blog posts, contacts, companies, deals,
+                      forms
                     </li>
                     <li>
-                      • <strong>Website Scraping:</strong> Extract content directly from your website
+                      • <strong>Website Scraping:</strong> Extract content directly from your
+                      website
                     </li>
                     <li>
                       • <strong>Sitemap Parsing:</strong> Discover pages automatically
@@ -101,13 +104,15 @@ export default function FreeTierDashboard({ user }: FreeTierDashboardProps) {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                <Badge variant={googleConnected ? "default" : "secondary"}>
-                  Google Sheets: {googleConnected ? "Connected" : "Not Connected"}
+                <Badge variant={googleConnected ? 'default' : 'secondary'}>
+                  Google Sheets: {googleConnected ? 'Connected' : 'Not Connected'}
                 </Badge>
-                <Badge variant={hubspotConnected ? "default" : "secondary"}>
-                  HubSpot APIs: {hubspotConnected ? "Connected" : "Not Connected"}
+                <Badge variant={hubspotConnected ? 'default' : 'secondary'}>
+                  HubSpot APIs: {hubspotConnected ? 'Connected' : 'Not Connected'}
                 </Badge>
-                <Badge variant={domain ? "default" : "secondary"}>Website: {domain ? domain : "Not Set"}</Badge>
+                <Badge variant={domain ? 'default' : 'secondary'}>
+                  Website: {domain ? domain : 'Not Set'}
+                </Badge>
               </div>
             </CardContent>
           </Card>
@@ -123,7 +128,10 @@ export default function FreeTierDashboard({ user }: FreeTierDashboardProps) {
             {/* Setup Tab */}
             <TabsContent value="connections" className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <GoogleConnection onConnectionChange={setGoogleConnected} onSheetSelect={setSelectedSheetId} />
+                <GoogleConnection
+                  onConnectionChange={setGoogleConnected}
+                  onSheetSelect={setSelectedSheetId}
+                />
                 <FreeTierConnection
                   onConnectionChange={setHubspotConnected}
                   onTokenChange={setHubspotToken}
@@ -145,11 +153,15 @@ export default function FreeTierDashboard({ user }: FreeTierDashboardProps) {
                 <Card>
                   <CardContent className="pt-6">
                     <div className="text-center py-8">
-                      <p className="text-gray-500 mb-4">Connect Google Sheets to enable backup functionality</p>
+                      <p className="text-gray-500 mb-4">
+                        Connect Google Sheets to enable backup functionality
+                      </p>
                       <Button
                         onClick={() => {
                           const tabsList = document.querySelector('[role="tablist"]')
-                          const connectionsTab = tabsList?.querySelector('[value="connections"]') as HTMLElement
+                          const connectionsTab = tabsList?.querySelector(
+                            '[value="connections"]'
+                          ) as HTMLElement
                           connectionsTab?.click()
                         }}
                         variant="outline"

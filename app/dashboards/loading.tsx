@@ -1,5 +1,5 @@
 // app/dashboards/loading.tsx
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardContent } from '@/components/ui/card'
 
 // This is a beautiful skeleton loader that mimics your page structure
 export default function DashboardLoading() {
@@ -34,5 +34,5 @@ export default function DashboardLoading() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

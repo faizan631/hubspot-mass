@@ -1,11 +1,11 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { CheckCircle, XCircle, AlertTriangle, RefreshCw } from "lucide-react"
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { CheckCircle, XCircle, AlertTriangle, RefreshCw } from 'lucide-react'
 
 export default function SupabaseDebug() {
   const [status, setStatus] = useState<{
@@ -25,27 +25,27 @@ export default function SupabaseDebug() {
     const supabase = createClient()
 
     try {
-      console.log("=== SUPABASE DEBUG ===")
-      console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL)
-      console.log("Anon Key:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 20) + "...")
+      console.log('=== SUPABASE DEBUG ===')
+      console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+      console.log('Anon Key:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 20) + '...')
 
       // Test 1: Basic connection
-      console.log("Testing basic connection...")
-      const { data: healthData, error: healthError } = await supabase.from("user_settings").select("count").limit(1)
+      console.log('Testing basic connection...')
+      const { error: healthError } = await supabase.from('user_settings').select('count').limit(1)
 
       if (healthError) {
-        console.error("Health check failed:", healthError)
+        console.error('Health check failed:', healthError)
         throw new Error(`Database connection failed: ${healthError.message}`)
       }
 
-      console.log("✅ Basic connection successful")
+      console.log('✅ Basic connection successful')
 
       // Test 2: Auth service
-      console.log("Testing auth service...")
+      console.log('Testing auth service...')
       const { data: authData, error: authError } = await supabase.auth.getSession()
 
       if (authError) {
-        console.error("Auth service failed:", authError)
+        console.error('Auth service failed:', authError)
         setStatus({
           connection: true,
           auth: false,
@@ -53,20 +53,20 @@ export default function SupabaseDebug() {
           error: `Auth service error: ${authError.message}`,
         })
       } else {
-        console.log("✅ Auth service working")
-        console.log("Current session:", authData.session ? "Active" : "None")
+        console.log('✅ Auth service working')
+        console.log('Current session:', authData.session ? 'Active' : 'None')
 
         // Test 3: Database operations
-        console.log("Testing database operations...")
-        const { data: dbData, error: dbError } = await supabase
-          .from("user_settings")
-          .select("id")
+        console.log('Testing database operations...')
+        const { error: dbError } = await supabase
+          .from('user_settings')
+          .select('id')
           .limit(1)
           .maybeSingle()
 
-        if (dbError && dbError.code !== "PGRST116") {
+        if (dbError && dbError.code !== 'PGRST116') {
           // PGRST116 is "no rows returned" which is fine
-          console.error("Database operation failed:", dbError)
+          console.error('Database operation failed:', dbError)
           setStatus({
             connection: true,
             auth: true,
@@ -74,7 +74,7 @@ export default function SupabaseDebug() {
             error: `Database error: ${dbError.message}`,
           })
         } else {
-          console.log("✅ Database operations working")
+          console.log('✅ Database operations working')
           setStatus({
             connection: true,
             auth: true,
@@ -83,13 +83,13 @@ export default function SupabaseDebug() {
         }
       }
     } catch (error) {
-      console.error("=== SUPABASE ERROR ===")
-      console.error("Error:", error)
+      console.error('=== SUPABASE ERROR ===')
+      console.error('Error:', error)
       setStatus({
         connection: false,
         auth: false,
         database: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       })
     }
     setLoading(false)
@@ -113,16 +113,18 @@ export default function SupabaseDebug() {
         <div className="space-y-2">
           <h4 className="font-medium">Environment Variables</h4>
           <div className="grid grid-cols-1 gap-2">
-            <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+            <div className="flex items-center justify-between p-2 bg-popover rounded">
               <span className="text-sm">NEXT_PUBLIC_SUPABASE_URL</span>
-              <Badge variant={process.env.NEXT_PUBLIC_SUPABASE_URL ? "default" : "destructive"}>
-                {process.env.NEXT_PUBLIC_SUPABASE_URL ? "✓ Set" : "✗ Missing"}
+              <Badge variant={process.env.NEXT_PUBLIC_SUPABASE_URL ? 'default' : 'destructive'}>
+                {process.env.NEXT_PUBLIC_SUPABASE_URL ? '✓ Set' : '✗ Missing'}
               </Badge>
             </div>
-            <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+            <div className="flex items-center justify-between p-2 bg-popover rounded">
               <span className="text-sm">NEXT_PUBLIC_SUPABASE_ANON_KEY</span>
-              <Badge variant={process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "default" : "destructive"}>
-                {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "✓ Set" : "✗ Missing"}
+              <Badge
+                variant={process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'default' : 'destructive'}
+              >
+                {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✓ Set' : '✗ Missing'}
               </Badge>
             </div>
           </div>
@@ -132,9 +134,11 @@ export default function SupabaseDebug() {
         <div className="space-y-2">
           <h4 className="font-medium">Connection Status</h4>
           <div className="grid grid-cols-1 gap-2">
-            <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+            <div className="flex items-center justify-between p-2 bg-popover rounded">
               <span className="text-sm">Basic Connection</span>
-              <Badge variant={status.connection ? "default" : loading ? "secondary" : "destructive"}>
+              <Badge
+                variant={status.connection ? 'default' : loading ? 'secondary' : 'destructive'}
+              >
                 {loading ? (
                   <RefreshCw className="h-3 w-3 animate-spin mr-1" />
                 ) : status.connection ? (
@@ -142,12 +146,12 @@ export default function SupabaseDebug() {
                 ) : (
                   <XCircle className="h-3 w-3 mr-1" />
                 )}
-                {loading ? "Testing..." : status.connection ? "Connected" : "Failed"}
+                {loading ? 'Testing...' : status.connection ? 'Connected' : 'Failed'}
               </Badge>
             </div>
-            <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+            <div className="flex items-center justify-between p-2 bg-popover rounded">
               <span className="text-sm">Auth Service</span>
-              <Badge variant={status.auth ? "default" : loading ? "secondary" : "destructive"}>
+              <Badge variant={status.auth ? 'default' : loading ? 'secondary' : 'destructive'}>
                 {loading ? (
                   <RefreshCw className="h-3 w-3 animate-spin mr-1" />
                 ) : status.auth ? (
@@ -155,12 +159,12 @@ export default function SupabaseDebug() {
                 ) : (
                   <XCircle className="h-3 w-3 mr-1" />
                 )}
-                {loading ? "Testing..." : status.auth ? "Working" : "Failed"}
+                {loading ? 'Testing...' : status.auth ? 'Working' : 'Failed'}
               </Badge>
             </div>
-            <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+            <div className="flex items-center justify-between p-2 bg-popover rounded">
               <span className="text-sm">Database Access</span>
-              <Badge variant={status.database ? "default" : loading ? "secondary" : "destructive"}>
+              <Badge variant={status.database ? 'default' : loading ? 'secondary' : 'destructive'}>
                 {loading ? (
                   <RefreshCw className="h-3 w-3 animate-spin mr-1" />
                 ) : status.database ? (
@@ -168,7 +172,7 @@ export default function SupabaseDebug() {
                 ) : (
                   <XCircle className="h-3 w-3 mr-1" />
                 )}
-                {loading ? "Testing..." : status.database ? "Working" : "Failed"}
+                {loading ? 'Testing...' : status.database ? 'Working' : 'Failed'}
               </Badge>
             </div>
           </div>
@@ -183,7 +187,7 @@ export default function SupabaseDebug() {
         )}
 
         {/* Configuration Help */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-accent border border-blue-200 rounded-lg p-4">
           <h4 className="font-medium text-blue-900 mb-2">Configuration Checklist</h4>
           <ul className="text-sm text-blue-800 space-y-1">
             <li>• Verify your Supabase project is active</li>

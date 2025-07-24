@@ -1,14 +1,21 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import { History, Undo2, Calendar, User } from "lucide-react"
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { useToast } from '@/hooks/use-toast'
+import { History, Undo2, Calendar, User } from 'lucide-react'
 
 interface ChangeHistoryProps {
   userId: string
@@ -29,8 +36,8 @@ interface Change {
 export default function ChangeHistory({ userId, hubspotToken }: ChangeHistoryProps) {
   const [changes, setChanges] = useState<Change[]>([])
   const [loading, setLoading] = useState(false)
-  const [selectedDate, setSelectedDate] = useState("")
-  const [selectedPageId, setSelectedPageId] = useState("")
+  const [selectedDate, setSelectedDate] = useState('')
+  const [selectedPageId, setSelectedPageId] = useState('')
   const [reverting, setReverting] = useState<string | null>(null)
   const { toast } = useToast()
 
@@ -42,8 +49,8 @@ export default function ChangeHistory({ userId, hubspotToken }: ChangeHistoryPro
     setLoading(true)
     try {
       const params = new URLSearchParams({ userId })
-      if (selectedDate) params.append("date", selectedDate)
-      if (selectedPageId) params.append("pageId", selectedPageId)
+      if (selectedDate) params.append('date', selectedDate)
+      if (selectedPageId) params.append('pageId', selectedPageId)
 
       const response = await fetch(`/api/backup/history?${params}`)
       const data = await response.json()
@@ -54,11 +61,11 @@ export default function ChangeHistory({ userId, hubspotToken }: ChangeHistoryPro
         throw new Error(data.error)
       }
     } catch (error) {
-      console.error("Failed to fetch changes:", error)
+      console.error('Failed to fetch changes:', error)
       toast({
-        title: "Error",
-        description: "Failed to fetch change history",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to fetch change history',
+        variant: 'destructive',
       })
     }
     setLoading(false)
@@ -67,18 +74,18 @@ export default function ChangeHistory({ userId, hubspotToken }: ChangeHistoryPro
   const revertChange = async (change: Change) => {
     if (!hubspotToken) {
       toast({
-        title: "Error",
-        description: "HubSpot token is required to revert changes",
-        variant: "destructive",
+        title: 'Error',
+        description: 'HubSpot token is required to revert changes',
+        variant: 'destructive',
       })
       return
     }
 
     setReverting(change.id)
     try {
-      const response = await fetch("/api/backup/revert", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/backup/revert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId,
           pageId: change.page_id,
@@ -91,7 +98,7 @@ export default function ChangeHistory({ userId, hubspotToken }: ChangeHistoryPro
       const data = await response.json()
       if (data.success) {
         toast({
-          title: "Change Reverted! ✅",
+          title: 'Change Reverted! ✅',
           description: data.message,
         })
         fetchChanges() // Refresh the list
@@ -99,11 +106,11 @@ export default function ChangeHistory({ userId, hubspotToken }: ChangeHistoryPro
         throw new Error(data.error)
       }
     } catch (error) {
-      console.error("Revert error:", error)
+      console.error('Revert error:', error)
       toast({
-        title: "Revert Failed",
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive",
+        title: 'Revert Failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
       })
     }
     setReverting(null)
@@ -111,14 +118,14 @@ export default function ChangeHistory({ userId, hubspotToken }: ChangeHistoryPro
 
   const getChangeTypeColor = (type: string) => {
     switch (type) {
-      case "create":
-        return "bg-green-100 text-green-800"
-      case "update":
-        return "bg-blue-100 text-blue-800"
-      case "delete":
-        return "bg-red-100 text-red-800"
+      case 'create':
+        return 'bg-green-100 text-green-800'
+      case 'update':
+        return 'bg-blue-100 text-blue-800'
+      case 'delete':
+        return 'bg-red-100 text-red-800'
       default:
-        return "bg-gray-100 text-gray-800"
+        return 'bg-muted text-gray-800'
     }
   }
 
@@ -140,7 +147,7 @@ export default function ChangeHistory({ userId, hubspotToken }: ChangeHistoryPro
               id="date-filter"
               type="date"
               value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+              onChange={e => setSelectedDate(e.target.value)}
             />
           </div>
           <div className="space-y-2">
@@ -149,7 +156,7 @@ export default function ChangeHistory({ userId, hubspotToken }: ChangeHistoryPro
               id="page-filter"
               placeholder="Enter page ID"
               value={selectedPageId}
-              onChange={(e) => setSelectedPageId(e.target.value)}
+              onChange={e => setSelectedPageId(e.target.value)}
             />
           </div>
         </div>
@@ -163,12 +170,12 @@ export default function ChangeHistory({ userId, hubspotToken }: ChangeHistoryPro
             </div>
           ) : changes.length === 0 ? (
             <div className="p-8 text-center">
-              <History className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <History className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
               <p className="text-gray-500">No changes found</p>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-sm text-muted-foreground/70 mt-1">
                 {selectedDate || selectedPageId
-                  ? "Try adjusting your filters"
-                  : "Make some changes to see history here"}
+                  ? 'Try adjusting your filters'
+                  : 'Make some changes to see history here'}
               </p>
             </div>
           ) : (
@@ -185,11 +192,11 @@ export default function ChangeHistory({ userId, hubspotToken }: ChangeHistoryPro
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {changes.map((change) => (
+                {changes.map(change => (
                   <TableRow key={change.id}>
                     <TableCell className="whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-gray-400" />
+                        <Calendar className="h-4 w-4 text-muted-foreground/70" />
                         {new Date(change.changed_at).toLocaleString()}
                       </div>
                     </TableCell>
@@ -198,26 +205,34 @@ export default function ChangeHistory({ userId, hubspotToken }: ChangeHistoryPro
                     <TableCell className="max-w-xs">
                       <div className="space-y-1">
                         <div className="text-sm">
-                          <span className="text-red-600">From:</span>{" "}
-                          <span className="font-mono bg-red-50 px-1 rounded">{change.old_value || "(empty)"}</span>
+                          <span className="text-red-600">From:</span>{' '}
+                          <span className="font-mono bg-red-50 px-1 rounded">
+                            {change.old_value || '(empty)'}
+                          </span>
                         </div>
                         <div className="text-sm">
-                          <span className="text-green-600">To:</span>{" "}
-                          <span className="font-mono bg-green-50 px-1 rounded">{change.new_value || "(empty)"}</span>
+                          <span className="text-green-600">To:</span>{' '}
+                          <span className="font-mono bg-green-50 px-1 rounded">
+                            {change.new_value || '(empty)'}
+                          </span>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getChangeTypeColor(change.change_type)}>{change.change_type}</Badge>
+                      <Badge className={getChangeTypeColor(change.change_type)}>
+                        {change.change_type}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm">{change.changed_by_user?.email || "Unknown"}</span>
+                        <User className="h-4 w-4 text-muted-foreground/70" />
+                        <span className="text-sm">
+                          {change.changed_by_user?.email || 'Unknown'}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      {change.change_type !== "create" && change.old_value && (
+                      {change.change_type !== 'create' && change.old_value && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -247,7 +262,9 @@ export default function ChangeHistory({ userId, hubspotToken }: ChangeHistoryPro
 
         {!hubspotToken && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <p className="text-amber-800 text-sm">⚠️ Connect your HubSpot account to enable the revert functionality</p>
+            <p className="text-amber-800 text-sm">
+              ⚠️ Connect your HubSpot account to enable the revert functionality
+            </p>
           </div>
         )}
       </CardContent>
